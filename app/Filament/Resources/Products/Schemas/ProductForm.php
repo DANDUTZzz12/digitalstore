@@ -2,13 +2,13 @@
 
 namespace App\Filament\Resources\Products\Schemas;
 
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\Repeater; // Kita hanya pakai Repeater untuk varian
-use Filament\Schemas\Schema;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput; // Kita hanya pakai Repeater untuk varian
+use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Schema;
 
 class ProductForm
 {
@@ -33,12 +33,12 @@ class ProductForm
                 Toggle::make('is_auto_send')
                     ->required(),
 
-                    Select::make('category_id')
-                        ->label('Kategori')
-                        ->relationship('category', 'name') // Mengambil data dari tabel categories
-                        ->searchable()
-                        ->preload()
-                        ->required(),
+                Select::make('category_id')
+                    ->label('Kategori')
+                    ->relationship('category', 'name') // Mengambil data dari tabel categories
+                    ->searchable()
+                    ->preload()
+                    ->required(),
 
                 // --- INI FITUR VARIANNYA ---
                 Repeater::make('variants')

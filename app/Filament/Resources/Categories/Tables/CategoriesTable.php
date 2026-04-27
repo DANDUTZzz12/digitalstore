@@ -23,7 +23,7 @@ class CategoriesTable
                     ->label('Slug')
                     ->badge() // Biar gaya dikit, slug-nya pakai bentuk badge
                     ->color('gray'),
-                
+
                 TextColumn::make('created_at')
                     ->label('Dibuat Pada')
                     ->dateTime()

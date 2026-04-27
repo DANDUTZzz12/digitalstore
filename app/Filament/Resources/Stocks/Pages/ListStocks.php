@@ -3,14 +3,14 @@
 namespace App\Filament\Resources\Stocks\Pages;
 
 use App\Filament\Resources\Stocks\StockResource;
-use App\Models\Stock;
 use App\Models\ProductVariant;
+use App\Models\Stock;
 use Filament\Actions;
-use Filament\Resources\Pages\ListRecords;
-use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Placeholder; 
+use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
+use Filament\Resources\Pages\ListRecords;
 use Illuminate\Support\Facades\DB;
 
 class ListStocks extends ListRecords
@@ -33,20 +33,21 @@ class ListStocks extends ListRecords
         if (is_array($ids) && isset($ids['ids'])) {
             $ids = $ids['ids'];
         }
-        
-        if (empty($ids)) return;
+
+        if (empty($ids)) {
+            return;
+        }
 
         // 👇 PERUBAHAN UTAMA: Sekarang kita hapus berdasarkan 'id', BUKAN 'email_or_phone'
-        $count = \App\Models\Stock::whereIn('id', $ids)->delete();
+        $count = Stock::whereIn('id', $ids)->delete();
 
-        \Filament\Notifications\Notification::make()
+        Notification::make()
             ->success()
             ->title('Hapus Terpilih Sukses!')
             ->body("$count baris data berhasil dihapus dengan aman.")
             ->send();
     }
-        // =========================================================================
-
+    // =========================================================================
 
     protected function getHeaderActions(): array
     {
@@ -75,20 +76,19 @@ class ListStocks extends ListRecords
                     }
 
                     // Susun daftar teks email yang double
-                    $list = $duplicates->map(fn($item) => "- {$item->email_or_phone} (Ada {$item->total} data)")->implode("\n");
+                    $list = $duplicates->map(fn ($item) => "- {$item->email_or_phone} (Ada {$item->total} data)")->implode("\n");
 
                     return [
                         Textarea::make('hasil_duplikat')
                             ->label('Daftar Akun yang Double')
                             ->default($list)
                             ->rows(10)
-                            ->disabled() 
+                            ->disabled()
                             ->helperText('Silakan cari email di atas pada tabel, lalu hapus salah satunya jika itu tidak sengaja terinput.'),
                     ];
                 })
-                ->modalSubmitAction(false) 
+                ->modalSubmitAction(false)
                 ->modalCancelActionLabel('Tutup Panel'),
-
 
             // 2. TOMBOL BULK ADD (Versi Normal tanpa Auto-Blokir)
             Actions\Action::make('bulk_add')
@@ -112,15 +112,17 @@ class ListStocks extends ListRecords
                         ->required(),
                 ])
                 ->action(function (array $data) {
-                    $lines = explode("\n", str_replace("\r", "", $data['bulk_data']));
+                    $lines = explode("\n", str_replace("\r", '', $data['bulk_data']));
                     $count = 0;
 
                     DB::beginTransaction();
                     try {
                         foreach ($lines as $line) {
-                            if (empty(trim($line))) continue;
+                            if (empty(trim($line))) {
+                                continue;
+                            }
                             $parts = explode('|', $line);
-                            
+
                             if (count($parts) >= 2) {
                                 Stock::create([
                                     'product_variant_id' => $data['product_variant_id'],
@@ -155,21 +157,22 @@ class ListStocks extends ListRecords
                 ])
                 ->action(function (array $data) {
                     $input = trim($data['emails_to_delete']);
-                    
+
                     // Fitur Rahasia: Hapus semua data
                     if ($input === 'HAPUS_SEMUA') {
                         $count = Stock::count();
                         Stock::truncate();
                         Notification::make()->success()->title('Reset Total!')->body("{$count} data berhasil disapu bersih.")->send();
+
                         return;
                     }
 
                     // Fitur Normal: Hapus berdasarkan kata/email yang diketik
-                    $emails = explode("\n", str_replace("\r", "", $input));
+                    $emails = explode("\n", str_replace("\r", '', $input));
                     $emails = array_map('trim', $emails);
-                    
+
                     $deleted = Stock::whereIn('email_or_phone', $emails)->delete();
-                    
+
                     Notification::make()
                         ->success()
                         ->title('Berhasil!')

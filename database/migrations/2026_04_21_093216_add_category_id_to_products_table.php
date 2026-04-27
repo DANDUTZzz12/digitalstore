@@ -10,12 +10,12 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up(): void
-{
-    Schema::table('products', function (Blueprint $table) {
-        // Kita buat nullable agar produk lama tidak error saat migrasi
-        $table->foreignId('category_id')->nullable()->constrained()->nullOnDelete();
-    });
-}
+    {
+        Schema::table('products', function (Blueprint $table) {
+            // Kita buat nullable agar produk lama tidak error saat migrasi
+            $table->foreignId('category_id')->nullable()->constrained()->nullOnDelete();
+        });
+    }
 
     /**
      * Reverse the migrations.
