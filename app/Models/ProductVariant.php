@@ -35,4 +35,22 @@ class ProductVariant extends Model
     {
         return $this->hasMany(Stock::class)->where('is_sold', false);
     }
+
+    public function flashsales(): HasMany
+    {
+        return $this->hasMany(Flashsale::class);
+    }
+
+    public function activeFlashsale(): ?Flashsale
+    {
+        return Flashsale::active()->where('product_variant_id', $this->id)->first();
+    }
+
+    /** Harga efektif: pakai flashsale price kalau ada, jika tidak harga normal. */
+    public function effectivePrice(): int
+    {
+        $fs = $this->activeFlashsale();
+
+        return $fs ? (int) $fs->flash_price : (int) $this->price;
+    }
 }

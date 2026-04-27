@@ -63,7 +63,8 @@ class CheckoutController extends Controller
         );
 
         // Hitung harga ULANG di server — jangan percaya input client.
-        $amount = (int) $variant->price;
+        // Pakai harga flashsale kalau sedang aktif untuk varian ini.
+        $amount = $variant->effectivePrice();
         $fee = 0;
         $total = $amount + $fee;
 

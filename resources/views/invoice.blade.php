@@ -7,8 +7,9 @@
 @endpush
 
 @section('content')
-    <div class="max-w-xl mx-auto">
-        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+<section class="py-10 md:py-14">
+    <div class="max-w-xl mx-auto px-4">
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-card">
             <div class="flex items-center justify-between mb-6">
                 <div>
                     <div class="text-xs text-slate-400 font-semibold uppercase tracking-wide">Invoice</div>
@@ -109,4 +110,5 @@
             @endif
         </div>
     </div>
+</section>
 @endsection

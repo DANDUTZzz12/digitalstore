@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\Products\Tables;
+namespace App\Filament\Resources\Articles\Tables;
 
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -10,45 +10,43 @@ use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
-class ProductsTable
+class ArticlesTable
 {
     public static function configure(Table $table): Table
     {
         return $table
             ->columns([
-                ImageColumn::make('image')
-                    ->label('Foto')
+                ImageColumn::make('cover_image')
+                    ->label('Cover')
                     ->disk('public')
                     ->square()
                     ->size(48),
-                TextColumn::make('name')
-                    ->label('Nama')
+                TextColumn::make('title')
+                    ->label('Judul')
                     ->searchable()
-                    ->limit(40),
-                TextColumn::make('category.name')
-                    ->label('Kategori')
-                    ->badge()
-                    ->sortable(),
-                TextColumn::make('price')
-                    ->label('Harga')
-                    ->money('IDR', locale: 'id')
-                    ->sortable(),
-                IconColumn::make('is_auto_send')
-                    ->label('Auto')
+                    ->limit(60),
+                TextColumn::make('slug')
+                    ->label('Slug')
+                    ->searchable()
+                    ->color('gray')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                IconColumn::make('is_published')
+                    ->label('Terbit')
                     ->boolean(),
-                IconColumn::make('is_best_seller')
-                    ->label('Best')
-                    ->boolean(),
-                TextColumn::make('sold_count')
-                    ->label('Terjual')
-                    ->numeric()
+                TextColumn::make('published_at')
+                    ->label('Tgl Terbit')
+                    ->dateTime('d M Y H:i')
                     ->sortable(),
+                TextColumn::make('created_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->defaultSort('updated_at', 'desc')
+            ->defaultSort('published_at', 'desc')
             ->filters([
                 //
             ])

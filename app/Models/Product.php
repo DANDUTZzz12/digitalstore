@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class Product extends Model
 {
@@ -14,9 +15,12 @@ class Product extends Model
     protected $fillable = [
         'name',
         'description',
+        'short_description',
         'image',
         'price',
         'is_auto_send',
+        'is_best_seller',
+        'sold_count',
         'category_id',
     ];
 
@@ -25,6 +29,8 @@ class Product extends Model
         return [
             'price' => 'integer',
             'is_auto_send' => 'boolean',
+            'is_best_seller' => 'boolean',
+            'sold_count' => 'integer',
         ];
     }
 
@@ -36,5 +42,23 @@ class Product extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function imageUrl(): ?string
+    {
+        if (! $this->image) {
+            return null;
+        }
+        // Already a full URL?
+        if (str_starts_with($this->image, 'http')) {
+            return $this->image;
+        }
+
+        return Storage::disk('public')->url($this->image);
+    }
+
+    public function lowestPrice(): int
+    {
+        return (int) ($this->variants()->min('price') ?? $this->price);
     }
 }

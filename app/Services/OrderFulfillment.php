@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\Flashsale;
 use App\Models\Order;
+use App\Models\Product;
 use App\Models\Stock;
 use App\Support\Audit;
 use Illuminate\Support\Facades\DB;
@@ -66,6 +68,21 @@ class OrderFulfillment
             }
 
             $locked->save();
+
+            // Increment counter flashsale (kalau order pakai harga flashsale)
+            // dan counter sold_count produk untuk fitur "best seller".
+            if ($locked->product_variant_id) {
+                $fs = Flashsale::active()
+                    ->where('product_variant_id', $locked->product_variant_id)
+                    ->lockForUpdate()
+                    ->first();
+                if ($fs && $locked->amount === (int) $fs->flash_price) {
+                    $fs->increment('sold');
+                }
+            }
+            if ($locked->product_id) {
+                Product::whereKey($locked->product_id)->increment('sold_count');
+            }
 
             Audit::log('order.paid', $locked, $context);
 

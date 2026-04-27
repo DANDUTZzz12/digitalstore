@@ -10,6 +10,14 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [FrontController::class, 'index'])->name('home');
 Route::get('/produk/{product}', [FrontController::class, 'show'])->name('products.show');
 
+// Halaman info
+Route::get('/cara-pemesanan', [FrontController::class, 'howToOrder'])->name('pages.how-to-order');
+Route::get('/faq', [FrontController::class, 'faq'])->name('pages.faq');
+Route::get('/ketentuan-order', [FrontController::class, 'terms'])->name('pages.terms');
+Route::get('/artikel', [FrontController::class, 'articleIndex'])->name('articles.index');
+Route::get('/artikel/{article:slug}', [FrontController::class, 'articleShow'])->name('articles.show');
+Route::get('/cek-invoice', [FrontController::class, 'cekInvoice'])->name('pages.cek-invoice');
+
 // Checkout instan — tanpa keranjang.
 Route::get('/checkout/{product}/{variant}', [CheckoutController::class, 'show'])
     ->name('checkout.show');
