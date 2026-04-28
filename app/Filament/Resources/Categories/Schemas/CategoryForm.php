@@ -3,8 +3,8 @@
 namespace App\Filament\Resources\Categories\Schemas;
 
 use Filament\Forms\Components\TextInput;
-use Illuminate\Support\Str;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Str;
 
 class CategoryForm
 {

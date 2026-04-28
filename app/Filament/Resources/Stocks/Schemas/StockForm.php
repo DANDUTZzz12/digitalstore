@@ -2,10 +2,10 @@
 
 namespace App\Filament\Resources\Stocks\Schemas;
 
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
 
 class StockForm
@@ -24,14 +24,19 @@ class StockForm
 
                 TextInput::make('email_or_phone')
                     ->label('Email / No HP')
-                    ->required(),
+                    ->required()
+                    ->helperText('Nilai ini akan dienkripsi otomatis di database.'),
 
                 TextInput::make('password')
                     ->label('Password Akun')
-                    ->required(),
+                    ->password()
+                    ->revealable()
+                    ->required()
+                    ->helperText('Dienkripsi otomatis. Revealable hanya untuk admin.'),
 
                 Textarea::make('additional_info')
                     ->label('Keterangan / Info Tambahan')
+                    ->rows(3)
                     ->columnSpanFull(),
 
                 Toggle::make('is_sold')

@@ -2,13 +2,14 @@
 
 namespace App\Filament\Resources\Products\Schemas;
 
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\Repeater; // Kita hanya pakai Repeater untuk varian
-use Filament\Schemas\Schema;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Schema;
 
 class ProductForm
 {
@@ -17,32 +18,59 @@ class ProductForm
         return $schema
             ->components([
                 TextInput::make('name')
+                    ->label('Nama Produk')
                     ->required()
                     ->maxLength(255),
+                TextInput::make('short_description')
+                    ->label('Deskripsi Singkat (tampil di kartu produk)')
+                    ->maxLength(255)
+                    ->columnSpanFull(),
                 Textarea::make('description')
+                    ->label('Deskripsi Lengkap')
+                    ->rows(5)
+                    ->columnSpanFull(),
+                RichEditor::make('terms_html')
+                    ->label('Syarat & Ketentuan (SNK)')
+                    ->helperText('Tampil di halaman detail produk di bawah deskripsi. Boleh kosongkan kalau tidak ada SNK khusus.')
+                    ->toolbarButtons([
+                        'bold', 'italic', 'underline', 'strike', 'link',
+                        'bulletList', 'orderedList', 'h2', 'h3', 'blockquote',
+                        'codeBlock', 'undo', 'redo',
+                    ])
                     ->columnSpanFull(),
                 FileUpload::make('image')
+                    ->label('Foto Produk')
                     ->image()
+                    ->imageEditor()
+                    ->disk('public')
                     ->directory('produk-images')
+                    ->visibility('public')
+                    ->maxSize(2048)
                     ->columnSpanFull(),
+
+                Select::make('category_id')
+                    ->label('Kategori')
+                    ->relationship('category', 'name')
+                    ->searchable()
+                    ->preload()
+                    ->required(),
                 TextInput::make('price')
                     ->required()
                     ->numeric()
                     ->prefix('Rp')
-                    ->label('Harga Utama'),
+                    ->label('Harga Utama (display)'),
+
                 Toggle::make('is_auto_send')
-                    ->required(),
+                    ->label('Auto-Delivery default (kirim akun otomatis dari stok)')
+                    ->helperText('Setiap varian bisa override setting ini secara individual.')
+                    ->default(true),
+                Toggle::make('is_best_seller')
+                    ->label('Tandai sebagai Best Seller')
+                    ->default(false),
 
-                    Select::make('category_id')
-                        ->label('Kategori')
-                        ->relationship('category', 'name') // Mengambil data dari tabel categories
-                        ->searchable()
-                        ->preload()
-                        ->required(),
-
-                // --- INI FITUR VARIANNYA ---
                 Repeater::make('variants')
-                    ->relationship() // Menyambung otomatis ke tabel product_variants
+                    ->label('Paket / Varian')
+                    ->relationship()
                     ->schema([
                         TextInput::make('name')
                             ->label('Durasi / Paket (Contoh: 1 Bulan)')
@@ -52,8 +80,19 @@ class ProductForm
                             ->numeric()
                             ->prefix('Rp')
                             ->required(),
+                        Select::make('is_auto_send')
+                            ->label('Mode Delivery')
+                            ->helperText('Default = ikut setting produk. Override kalau varian ini perlu mode berbeda.')
+                            ->options([
+                                '' => 'Default (ikut produk)',
+                                '1' => 'Auto (kirim dari stok otomatis)',
+                                '0' => 'Manual (admin input akun setelah PAID)',
+                            ])
+                            ->placeholder('Default (ikut produk)')
+                            ->dehydrateStateUsing(fn ($state) => ($state === '' || $state === null) ? null : (bool) $state)
+                            ->columnSpan(2),
                     ])
-                    ->columns(2) // Agar input nama dan harga bersebelahan
+                    ->columns(2)
                     ->columnSpanFull()
                     ->createItemButtonLabel('Tambah Varian Baru'),
             ]);

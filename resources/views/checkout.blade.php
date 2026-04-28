@@ -1,0 +1,99 @@
+@extends('layouts.app')
+
+@section('title', 'Checkout — ' . $product->name)
+
+@section('content')
+<section class="py-10 md:py-14">
+    <div class="max-w-xl mx-auto px-4">
+        <h1 class="text-2xl md:text-3xl font-extrabold text-slate-900 text-center">Checkout</h1>
+        <p class="text-slate-500 mt-1 text-center text-sm">Lengkapi data kontak, lalu lanjut bayar via QRIS / VA / E-Wallet.</p>
+
+        <div class="mt-6 bg-white rounded-2xl border border-slate-200 p-6 shadow-card">
+            @php
+                $fs = $variant->activeFlashsale();
+                $effective = $variant->effectivePrice();
+            @endphp
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-14 h-14 rounded-xl bg-slate-100 overflow-hidden flex items-center justify-center text-2xl">
+                        @if ($product->imageUrl())
+                            <img src="{{ $product->imageUrl() }}" alt="" class="w-full h-full object-cover">
+                        @else
+                            🎬
+                        @endif
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-brand font-bold uppercase tracking-wide">{{ $product->category?->name }}</div>
+                        <div class="font-bold text-slate-800 leading-tight">{{ $product->name }}</div>
+                        <div class="text-xs text-slate-500">Paket: {{ $variant->name }}</div>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-[10px] text-slate-400 uppercase">Total</div>
+                    @if ($fs)
+                        <div class="text-rose-600 font-extrabold text-xl">Rp {{ number_format($effective, 0, ',', '.') }}</div>
+                        <div class="price-strike">Rp {{ number_format($variant->price, 0, ',', '.') }}</div>
+                    @else
+                        <div class="text-xl font-extrabold text-slate-900">Rp {{ number_format($effective, 0, ',', '.') }}</div>
+                    @endif
+                </div>
+            </div>
+
+            @if ($errors->any())
+                <div class="mt-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl px-4 py-3 text-sm">
+                    <ul class="list-disc list-inside">
+                        @foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach
+                    </ul>
+                </div>
+            @endif
+
+            @guest
+                <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs flex items-center justify-between gap-3">
+                    <span class="text-slate-600">Sudah punya akun? Login dulu biar history tersimpan otomatis.</span>
+                    <a href="{{ route('login') }}" class="font-semibold text-brand whitespace-nowrap hover:underline">Masuk →</a>
+                </div>
+            @endguest
+
+            <form method="POST" action="{{ route('checkout.store') }}" class="mt-5 space-y-4">
+                @csrf
+                <input type="hidden" name="product_id" value="{{ $product->id }}">
+                <input type="hidden" name="product_variant_id" value="{{ $variant->id }}">
+
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Email <span class="text-rose-500">*</span></label>
+                    <input type="email" name="customer_email" required
+                           value="{{ old('customer_email', auth()->user()->email ?? '') }}"
+                           placeholder="kamu@email.com"
+                           @auth readonly @endauth
+                           class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-brand focus:outline-none focus:ring-2 ring-brand/30 @auth bg-slate-50 text-slate-600 @endauth">
+                    <p class="text-xs text-slate-500 mt-1">Kredensial akun akan dikirim ke email ini & tampil di halaman invoice.</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Nomor WhatsApp <span class="text-slate-400 font-normal">(opsional)</span></label>
+                    <input type="text" name="customer_phone"
+                           value="{{ old('customer_phone', auth()->user()->phone ?? '') }}"
+                           placeholder="08xxxxxxxxxx"
+                           class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-brand focus:outline-none focus:ring-2 ring-brand/30">
+                </div>
+
+                <button type="submit" class="w-full rounded-xl btn-brand font-extrabold text-base px-4 py-3 transition">
+                    Bayar Sekarang
+                </button>
+                <p class="text-xs text-slate-500 text-center">Kamu akan diarahkan ke halaman pembayaran Pakasir yang aman.</p>
+            </form>
+        </div>
+
+        <div class="mt-6 grid grid-cols-3 gap-3 text-center">
+            <div class="rounded-xl bg-white border border-slate-200 p-3 text-xs">
+                <div class="text-lg">⚡</div><div class="font-semibold mt-1">Instant Delivery</div>
+            </div>
+            <div class="rounded-xl bg-white border border-slate-200 p-3 text-xs">
+                <div class="text-lg">🛡️</div><div class="font-semibold mt-1">Garansi Penuh</div>
+            </div>
+            <div class="rounded-xl bg-white border border-slate-200 p-3 text-xs">
+                <div class="text-lg">🔒</div><div class="font-semibold mt-1">Pembayaran Aman</div>
+            </div>
+        </div>
+    </div>
+</section>
+@endsection

@@ -8,11 +8,11 @@ use App\Filament\Resources\Stocks\Pages\ListStocks;
 use App\Filament\Resources\Stocks\Schemas\StockForm;
 use App\Filament\Resources\Stocks\Tables\StocksTable;
 use App\Models\Stock;
+use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Tables\Table;
-use UnitEnum;   // <-- Ini ditambahkan agar PHP 8.4 tidak protes
-use BackedEnum; // <-- Ini juga ditambahkan
+use Filament\Tables\Table;   // <-- Ini ditambahkan agar PHP 8.4 tidak protes
+use UnitEnum; // <-- Ini juga ditambahkan
 
 class StockResource extends Resource
 {

@@ -6,6 +6,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -15,23 +16,39 @@ class ProductsTable
     {
         return $table
             ->columns([
+                ImageColumn::make('image')
+                    ->label('Foto')
+                    ->disk('public')
+                    ->square()
+                    ->size(48),
                 TextColumn::make('name')
-                    ->searchable(),
+                    ->label('Nama')
+                    ->searchable()
+                    ->limit(40),
+                TextColumn::make('category.name')
+                    ->label('Kategori')
+                    ->badge()
+                    ->sortable(),
                 TextColumn::make('price')
-                    ->label('Harga Utama')
-                    ->money('IDR', locale: 'id') // <--- Tambahkan ini agar jadi Rp dan ada titik ribuan
+                    ->label('Harga')
+                    ->money('IDR', locale: 'id')
                     ->sortable(),
                 IconColumn::make('is_auto_send')
+                    ->label('Auto')
                     ->boolean(),
-                TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                IconColumn::make('is_best_seller')
+                    ->label('Best')
+                    ->boolean(),
+                TextColumn::make('sold_count')
+                    ->label('Terjual')
+                    ->numeric()
+                    ->sortable(),
                 TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->defaultSort('updated_at', 'desc')
             ->filters([
                 //
             ])
