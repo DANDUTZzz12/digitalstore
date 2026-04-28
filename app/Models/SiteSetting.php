@@ -30,6 +30,8 @@ class SiteSetting extends Model
         'fonnte_api_key',
         'fonnte_auto_send_credentials',
         'fonnte_credentials_template',
+        'fonnte_admin_number',
+        'fonnte_webhook_secret',
     ];
 
     /** Fonnte API key disimpan terenkripsi (AES-256-CBC) — sensitive credential. */

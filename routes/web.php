@@ -3,6 +3,7 @@
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\FonnteWebhookController;
 use App\Http\Controllers\FrontController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\PakasirWebhookController;
@@ -36,6 +37,11 @@ Route::get('/invoice/{orderCode}', [InvoiceController::class, 'show'])
 Route::post('/webhooks/pakasir', [PakasirWebhookController::class, 'handle'])
     ->middleware('throttle:120,1')
     ->name('webhooks.pakasir');
+
+// Webhook dari Fonnte (incoming message dari customer).
+Route::post('/webhooks/fonnte', [FonnteWebhookController::class, 'handle'])
+    ->middleware('throttle:120,1')
+    ->name('webhooks.fonnte');
 
 // ======== Auth (login / register / lupa password) ========
 // Rate limit ketat utk cegah brute-force.

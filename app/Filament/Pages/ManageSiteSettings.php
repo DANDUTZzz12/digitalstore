@@ -115,8 +115,18 @@ class ManageSiteSettings extends Page implements HasForms
                             ->revealable()
                             ->placeholder('Token dari fonnte.com → Device → API')
                             ->columnSpanFull(),
+                        TextInput::make('fonnte_admin_number')
+                            ->label('Nomor Admin (notifikasi order baru)')
+                            ->placeholder('085211923457 atau 6285211923457')
+                            ->helperText('Setiap order PAID, admin akan dapat notif singkat di WA. Kosongkan kalau tidak perlu.'),
+                        TextInput::make('fonnte_webhook_secret')
+                            ->label('Webhook Secret (opsional)')
+                            ->password()
+                            ->revealable()
+                            ->placeholder('Random string panjang')
+                            ->helperText('Set kalau kamu mau aktifkan inbound webhook. Tambahkan header `X-Fonnte-Token` dengan nilai ini di setting Fonnte → Webhook.'),
                         Textarea::make('fonnte_credentials_template')
-                            ->label('Template Pesan (opsional)')
+                            ->label('Template Pesan ke Customer (opsional)')
                             ->rows(8)
                             ->placeholder('Kosongkan untuk pakai template default. Placeholder: {{order_code}} {{product}} {{variant}} {{email}} {{password}} {{additional_info}}')
                             ->helperText('Setiap placeholder akan diganti dengan data order saat pesan dikirim.')

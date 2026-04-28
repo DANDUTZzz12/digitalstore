@@ -29,6 +29,12 @@ class FonnteWhatsApp
         'Harap simpan kredensial ini dan jangan dibagikan ke siapapun. '.
         'Jika ada kendala silakan balas pesan ini.';
 
+    public const ADMIN_TEMPLATE = "[Order Baru PAID]\n".
+        "Kode: {{order_code}}\n".
+        "Produk: {{product}} - {{variant}}\n".
+        "Pembeli: {{customer_email}} / {{customer_phone}}\n".
+        "Akun terkirim: {{email}}\n";
+
     /**
      * Kirim kredensial akun untuk satu order ke nomor customer.
      * Return true jika request berhasil dikirim ke Fonnte (status 200 + status response = success).
@@ -62,6 +68,44 @@ class FonnteWhatsApp
             '{{additional_info}}' => (string) ($stock->additional_info ?? '-'),
         ]);
 
+        $sent = $this->send($order, $phone, $message);
+        if ($sent) {
+            $this->notifyAdmin($order, $stock);
+        }
+
+        return $sent;
+    }
+
+    /** Kirim notif ringkas ke admin number kalau di-set di Site Settings. */
+    public function notifyAdmin(Order $order, $stock = null): bool
+    {
+        $site = SiteSetting::current();
+        $adminPhone = $this->normalizePhone((string) ($site->fonnte_admin_number ?? ''));
+        if ($adminPhone === '' || empty($site->fonnte_api_key)) {
+            return false;
+        }
+
+        $stock ??= $order->stock;
+        $message = strtr(self::ADMIN_TEMPLATE, [
+            '{{order_code}}' => (string) $order->order_code,
+            '{{product}}' => (string) optional($order->product)->name,
+            '{{variant}}' => (string) optional($order->variant)->name,
+            '{{customer_email}}' => (string) ($order->customer_email ?? '-'),
+            '{{customer_phone}}' => (string) ($order->customer_phone ?? '-'),
+            '{{email}}' => (string) optional($stock)->email_or_phone ?: '-',
+        ]);
+
+        return $this->send($order, $adminPhone, $message, isAdmin: true);
+    }
+
+    /** Kirim arbitrary message ke nomor (helper internal + dipakai oleh webhook untuk reply). */
+    public function send(?Order $order, string $phone, string $message, bool $isAdmin = false): bool
+    {
+        $site = SiteSetting::current();
+        if (empty($site->fonnte_api_key)) {
+            return false;
+        }
+
         try {
             $response = Http::asForm()
                 ->withHeaders(['Authorization' => $site->fonnte_api_key])
@@ -78,16 +122,18 @@ class FonnteWhatsApp
             Audit::log($ok ? 'whatsapp.sent' : 'whatsapp.failed', $order, [
                 'channel' => 'fonnte',
                 'phone' => $phone,
+                'is_admin' => $isAdmin,
                 'http_status' => $response->status(),
                 'response' => $body,
             ]);
 
             return $ok;
         } catch (Throwable $e) {
-            Log::error('Fonnte send failed', ['order_id' => $order->id, 'error' => $e->getMessage()]);
+            Log::error('Fonnte send failed', ['order_id' => $order?->id, 'error' => $e->getMessage()]);
             Audit::log('whatsapp.failed', $order, [
                 'channel' => 'fonnte',
                 'phone' => $phone,
+                'is_admin' => $isAdmin,
                 'exception' => $e->getMessage(),
             ]);
 

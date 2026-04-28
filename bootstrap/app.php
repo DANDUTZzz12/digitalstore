@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // khusus untuk path ini — validasi dilakukan via Transaction Detail API.
         $middleware->validateCsrfTokens(except: [
             'webhooks/pakasir',
+            'webhooks/fonnte',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
