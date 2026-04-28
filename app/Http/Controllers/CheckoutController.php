@@ -107,7 +107,17 @@ class CheckoutController extends Controller
 
     protected function generateOrderCode(): string
     {
-        // Contoh: AKH-20260427-AB12CD
-        return 'AKH-'.now()->format('Ymd').'-'.strtoupper(Str::random(6));
+        // Contoh: AKH-20260427-AB12CD. strtoupper menyusutkan charset Str::random
+        // jadi 36 (A-Z + 0-9) — collision sangat tidak mungkin tapi mungkin.
+        // Retry 5x baru fallback ke 10 char (search space jauh lebih besar)
+        // supaya checkout user tidak 500 kalau kebetulan tabrakan.
+        for ($i = 0; $i < 5; $i++) {
+            $code = 'AKH-'.now()->format('Ymd').'-'.strtoupper(Str::random(6));
+            if (! Order::where('order_code', $code)->exists()) {
+                return $code;
+            }
+        }
+
+        return 'AKH-'.now()->format('Ymd').'-'.strtoupper(Str::random(10));
     }
 }
