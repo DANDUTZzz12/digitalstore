@@ -62,6 +62,18 @@ class PakasirWebhookController extends Controller
             return response()->json(['ok' => true, 'note' => 'status_ignored']);
         }
 
+        // Cegah webhook membangkitkan order yang sudah di-cancel/refund/expired/failed.
+        // Hanya order PENDING (transisi normal) atau PAID (idempotent retry) yang
+        // boleh diproses. Manual override tetap bisa lewat admin Filament.
+        if (! $order->isPending() && ! $order->isPaid()) {
+            Audit::log('webhook.order_not_processable', $order, [
+                'current_status' => $order->status,
+                'incoming_status' => $status,
+            ]);
+
+            return response()->json(['ok' => true, 'note' => 'order_not_processable']);
+        }
+
         // Verifikasi via API — jangan percaya payload saja.
         if (! $this->pakasir->verifyWebhook($order, $payload)) {
             Audit::log('webhook.verification_failed', $order, compact('amount', 'status'));
