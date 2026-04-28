@@ -61,11 +61,20 @@ class ListStocks extends ListRecords
                 ->color('warning')
                 ->icon('heroicon-o-magnifying-glass-circle')
                 ->form(function () {
-                    // Logika: Cari email yang jumlahnya lebih dari 1
-                    $duplicates = Stock::select('email_or_phone', DB::raw('count(*) as total'))
+                    // Karena kolom email_or_phone disimpan ter-enkripsi (AES-256-CBC
+                    // dengan IV acak), ciphertext untuk plaintext yang sama selalu
+                    // berbeda — GROUP BY di SQL tidak akan pernah ketemu duplikat.
+                    // Solusi: load semua row, decrypt di PHP via Eloquent cast,
+                    // lalu group di Collection.
+                    $duplicates = Stock::query()
+                        ->get(['id', 'email_or_phone'])
                         ->groupBy('email_or_phone')
-                        ->having('total', '>', 1)
-                        ->get();
+                        ->filter(fn ($group) => $group->count() > 1)
+                        ->map(fn ($group, $email) => [
+                            'email_or_phone' => $email,
+                            'total' => $group->count(),
+                        ])
+                        ->values();
 
                     if ($duplicates->isEmpty()) {
                         return [
@@ -76,7 +85,7 @@ class ListStocks extends ListRecords
                     }
 
                     // Susun daftar teks email yang double
-                    $list = $duplicates->map(fn ($item) => "- {$item->email_or_phone} (Ada {$item->total} data)")->implode("\n");
+                    $list = $duplicates->map(fn ($item) => "- {$item['email_or_phone']} (Ada {$item['total']} data)")->implode("\n");
 
                     return [
                         Textarea::make('hasil_duplikat')
@@ -167,11 +176,24 @@ class ListStocks extends ListRecords
                         return;
                     }
 
-                    // Fitur Normal: Hapus berdasarkan kata/email yang diketik
-                    $emails = explode("\n", str_replace("\r", '', $input));
-                    $emails = array_map('trim', $emails);
+                    // Fitur Normal: Hapus berdasarkan kata/email yang diketik.
+                    // Kolom email_or_phone ter-enkripsi (IV acak), jadi WHERE IN di
+                    // SQL tidak akan pernah match plaintext. Decrypt via Eloquent,
+                    // collect ID yang cocok, lalu hapus by ID.
+                    $emails = collect(explode("\n", str_replace("\r", '', $input)))
+                        ->map(fn ($e) => trim($e))
+                        ->filter()
+                        ->values();
 
-                    $deleted = Stock::whereIn('email_or_phone', $emails)->delete();
+                    $matchedIds = Stock::query()
+                        ->get(['id', 'email_or_phone'])
+                        ->filter(fn ($s) => $emails->contains($s->email_or_phone))
+                        ->pluck('id')
+                        ->all();
+
+                    $deleted = $matchedIds === []
+                        ? 0
+                        : Stock::whereIn('id', $matchedIds)->delete();
 
                     Notification::make()
                         ->success()

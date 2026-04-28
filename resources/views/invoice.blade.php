@@ -3,7 +3,9 @@
 @section('title', 'Invoice ' . $order->order_code)
 
 @push('head')
-    <meta http-equiv="refresh" content="{{ $order->isPending() ? '15' : '' }}">
+    @if ($order->isPending())
+        <meta http-equiv="refresh" content="15">
+    @endif
 @endpush
 
 @section('content')
