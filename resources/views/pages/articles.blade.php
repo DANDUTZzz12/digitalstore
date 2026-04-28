@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Artikel & Tips — ' . ($site->store_name ?? 'Akhpremium Store'))
+@section('title', 'Artikel & Tips — ' . ($site?->store_name ?? 'Akhpremium Store'))
 
 @section('content')
 <section class="py-12 md:py-16">

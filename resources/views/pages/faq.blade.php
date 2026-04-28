@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'FAQ — ' . ($site->store_name ?? 'Akhpremium Store'))
+@section('title', 'FAQ — ' . ($site?->store_name ?? 'Akhpremium Store'))
 
 @section('content')
 <section class="py-12 md:py-16">
@@ -27,7 +27,7 @@
             <div class="mt-10 rounded-2xl bg-white border border-slate-200 p-6 text-center shadow-card">
                 <div class="font-bold">Masih ada pertanyaan?</div>
                 <p class="text-slate-500 text-sm mt-1">Hubungi admin via WhatsApp untuk respons cepat.</p>
-                <a href="{{ $site->waLink('Halo admin, saya ingin bertanya:') }}" target="_blank" rel="noopener"
+                <a href="{{ $site?->waLink('Halo admin, saya ingin bertanya:') }}" target="_blank" rel="noopener"
                    class="mt-4 inline-flex rounded-xl btn-brand font-bold text-sm px-5 py-2.5">Chat Admin</a>
             </div>
         @endif

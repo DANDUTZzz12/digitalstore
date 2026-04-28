@@ -94,11 +94,11 @@
             </div>
 
             <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-[1.05] tracking-tight">
-                {!! \Illuminate\Support\Str::of($site->hero_title ?? 'Akun Premium Legal, Harga Sahabat.')
+                {!! \Illuminate\Support\Str::of($site?->hero_title ?? 'Akun Premium Legal, Harga Sahabat.')
                     ->replaceMatches('/(Premium|Legal|Sahabat|Murah|Garansi)/i', '<span class="hero-shine">$1</span>') !!}
             </h1>
             <p class="text-white/80 text-base md:text-lg mt-5 max-w-xl">
-                {{ $site->hero_subtitle ?? 'Pilih produk, bayar QRIS / VA / E-Wallet, akun langsung dikirim ke email kamu. Tanpa cart, tanpa ribet — proses gak sampai 1 menit.' }}
+                {{ $site?->hero_subtitle ?? 'Pilih produk, bayar QRIS / VA / E-Wallet, akun langsung dikirim ke email kamu. Tanpa cart, tanpa ribet — proses gak sampai 1 menit.' }}
             </p>
 
             <form action="{{ route('home') }}#katalog" method="GET" class="mt-7 flex max-w-xl glass rounded-2xl p-1.5">
@@ -516,7 +516,7 @@
                 </div>
                 <div class="flex flex-col sm:flex-row md:justify-end gap-3">
                     @if (! empty($site?->wa_number))
-                        <a href="{{ $site->waLink() }}" target="_blank" rel="noopener"
+                        <a href="{{ $site?->waLink() }}" target="_blank" rel="noopener"
                            class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-5 py-3 shadow-lg shadow-emerald-500/30 transition">
                             <svg viewBox="0 0 24 24" class="w-5 h-5" fill="currentColor"><path d="M17.6 14c-.3-.1-1.7-.8-1.9-.9-.3-.1-.5-.1-.7.2-.2.3-.8.9-.9 1.1-.2.2-.3.2-.6.1-1.6-.8-2.7-1.4-3.7-3.2-.3-.5.3-.5.8-1.5.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5-.2 0-.4 0-.6 0s-.5.1-.8.4c-.3.3-1.1 1-1.1 2.4s1.1 2.8 1.3 3c.2.2 2.2 3.5 5.4 4.8 2.6 1 3.1.8 3.7.8.6 0 1.7-.7 2-1.4.2-.7.2-1.2.2-1.4 0-.1-.3-.2-.6-.3z"/><path d="M12 0C5.4 0 0 5.4 0 12c0 2.1.5 4.1 1.6 5.9L0 24l6.3-1.7c1.7.9 3.7 1.4 5.7 1.4 6.6 0 12-5.4 12-12S18.6 0 12 0zm0 21.8c-1.8 0-3.6-.5-5.1-1.4l-.4-.2-3.7 1 1-3.6-.2-.4c-1-1.6-1.5-3.4-1.5-5.2C2.1 6.5 6.5 2.1 12 2.1S21.9 6.5 21.9 12 17.5 21.8 12 21.8z"/></svg>
                             Chat Admin di WhatsApp

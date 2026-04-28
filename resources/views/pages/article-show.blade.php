@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', $article->title . ' — ' . ($site->store_name ?? 'Akhpremium Store'))
+@section('title', $article->title . ' — ' . ($site?->store_name ?? 'Akhpremium Store'))
 @section('meta_description', $article->excerpt ?? \Illuminate\Support\Str::limit(strip_tags($article->content), 150))
 
 @section('content')

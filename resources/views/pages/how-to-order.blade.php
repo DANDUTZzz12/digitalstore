@@ -1,11 +1,11 @@
 @extends('layouts.app')
-@section('title', 'Cara Pemesanan — ' . ($site->store_name ?? 'Akhpremium Store'))
+@section('title', 'Cara Pemesanan — ' . ($site?->store_name ?? 'Akhpremium Store'))
 
 @section('content')
 <section class="py-12 md:py-16">
     <div class="max-w-4xl mx-auto px-4">
         <h1 class="text-3xl md:text-4xl font-extrabold text-center">Cara Pemesanan</h1>
-        <p class="text-slate-500 text-center mt-2">Pesan akun premium di {{ $site->store_name ?? 'toko' }} hanya butuh 4 langkah singkat.</p>
+        <p class="text-slate-500 text-center mt-2">Pesan akun premium di {{ $site?->store_name ?? 'toko' }} hanya butuh 4 langkah singkat.</p>
 
         <div class="mt-10 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             @php
@@ -30,7 +30,7 @@
 
         @if (! empty($site?->how_to_order_html))
             <div class="mt-10 rounded-2xl bg-white border border-slate-200 p-6 prose-content text-sm text-slate-700">
-                {!! $site->how_to_order_html !!}
+                {!! $site?->how_to_order_html !!}
             </div>
         @endif
 

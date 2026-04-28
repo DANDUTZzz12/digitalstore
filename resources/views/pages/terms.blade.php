@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Ketentuan Order — ' . ($site->store_name ?? 'Akhpremium Store'))
+@section('title', 'Ketentuan Order — ' . ($site?->store_name ?? 'Akhpremium Store'))
 
 @section('content')
 <section class="py-12 md:py-16">
@@ -9,7 +9,7 @@
 
         <div class="mt-8 rounded-2xl bg-white border border-slate-200 p-6 md:p-8 prose-content text-slate-700">
             @if (! empty($site?->terms_html))
-                {!! $site->terms_html !!}
+                {!! $site?->terms_html !!}
             @else
                 <h2>1. Garansi Akun</h2>
                 <p>Setiap akun yang kami jual memiliki garansi sesuai durasi pembelian. Apabila akun bermasalah karena kesalahan dari pihak kami, akan kami ganti tanpa biaya tambahan.</p>

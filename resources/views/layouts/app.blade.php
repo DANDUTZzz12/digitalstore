@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', ($site->store_name ?? 'Akhpremium Store') . ' — Akun Premium Legal & Murah')</title>
-    <meta name="description" content="@yield('meta_description', $site->tagline ?? 'Toko akun premium legal dengan auto-delivery 24 jam.')">
+    <title>@yield('title', ($site?->store_name ?? 'Akhpremium Store') . ' — Akun Premium Legal & Murah')</title>
+    <meta name="description" content="@yield('meta_description', $site?->tagline ?? 'Toko akun premium legal dengan auto-delivery 24 jam.')">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -30,10 +30,10 @@
     </script>
     <style>
         :root {
-            --brand: {{ $site->brand_color ?? '#7c3aed' }};
-            --brand-dark: {{ $site->brand_color ?? '#6d28d9' }};
-            --brand-soft: color-mix(in oklab, {{ $site->brand_color ?? '#7c3aed' }} 8%, white);
-            --accent: {{ $site->accent_color ?? '#06b6d4' }};
+            --brand: {{ $site?->brand_color ?? '#7c3aed' }};
+            --brand-dark: color-mix(in oklab, {{ $site?->brand_color ?? '#7c3aed' }} 82%, black);
+            --brand-soft: color-mix(in oklab, {{ $site?->brand_color ?? '#7c3aed' }} 8%, white);
+            --accent: {{ $site?->accent_color ?? '#06b6d4' }};
         }
         body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; background: #f8fafc; color: #0f172a; }
         .btn-brand { background: var(--brand); color: white; }
@@ -88,7 +88,7 @@
 @include('partials.footer')
 
 @if (! empty($site?->wa_number))
-    <a href="{{ $site->waLink() }}" target="_blank" rel="noopener"
+    <a href="{{ $site?->waLink() }}" target="_blank" rel="noopener"
        class="fixed bottom-5 right-5 z-50 inline-flex items-center gap-2 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold pl-3 pr-4 py-3 shadow-lg shadow-emerald-500/30 transition">
         <svg viewBox="0 0 24 24" class="w-6 h-6" fill="currentColor" aria-hidden="true">
             <path d="M19.07 4.93A10 10 0 0 0 4.13 18.4L3 22l3.72-1.1A10 10 0 1 0 19.07 4.93Zm-7.06 15.13a8.06 8.06 0 0 1-4.1-1.13l-.3-.18-2.21.66.65-2.16-.2-.32a8 8 0 1 1 6.16 3.13Zm4.42-5.84c-.24-.12-1.45-.71-1.67-.79-.22-.08-.39-.12-.55.12s-.63.79-.77.95c-.14.16-.28.18-.52.06a6.5 6.5 0 0 1-1.92-1.18 7.18 7.18 0 0 1-1.33-1.66c-.14-.24 0-.36.1-.48.1-.1.24-.28.36-.42a1.6 1.6 0 0 0 .24-.4.45.45 0 0 0 0-.42c-.06-.12-.55-1.32-.75-1.8-.2-.48-.4-.42-.55-.42h-.47a.9.9 0 0 0-.66.3 2.78 2.78 0 0 0-.86 2.06 4.83 4.83 0 0 0 1 2.55c.12.16 1.74 2.66 4.21 3.73a14.06 14.06 0 0 0 1.4.52 3.36 3.36 0 0 0 1.55.1 2.55 2.55 0 0 0 1.66-1.18 2.06 2.06 0 0 0 .14-1.18c-.06-.1-.22-.16-.46-.28Z"/>
