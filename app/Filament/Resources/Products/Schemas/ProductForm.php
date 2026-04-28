@@ -89,7 +89,7 @@ class ProductForm
                                 '0' => 'Manual (admin input akun setelah PAID)',
                             ])
                             ->placeholder('Default (ikut produk)')
-                            ->dehydrateStateUsing(fn ($state) => $state === '' ? null : (bool) $state)
+                            ->dehydrateStateUsing(fn ($state) => ($state === '' || $state === null) ? null : (bool) $state)
                             ->columnSpan(2),
                     ])
                     ->columns(2)
