@@ -204,49 +204,49 @@
 {{-- ================= FLASH SALE ================= --}}
 @if ($flashsales->isNotEmpty())
     @php $earliestEnd = $flashsales->min('end_at'); @endphp
-    <section class="relative py-10 md:py-14">
+    <section class="relative py-8 md:py-10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="rounded-3xl bg-gradient-to-r from-rose-500 via-orange-500 to-amber-400 p-[2px] shadow-2xl shadow-rose-500/20">
-                <div class="rounded-[1.4rem] bg-slate-900 text-white p-5 md:p-8">
-                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-                        <div class="flex items-center gap-3">
-                            <span class="badge-flash w-12 h-12 rounded-xl grid place-items-center text-2xl">⚡</span>
+            <div class="rounded-2xl bg-gradient-to-r from-rose-500 via-orange-500 to-amber-400 p-[2px] shadow-xl shadow-rose-500/20">
+                <div class="rounded-[0.95rem] bg-slate-900 text-white px-4 md:px-5 py-4 md:py-5">
+                    <div class="flex items-center justify-between gap-3 mb-4">
+                        <div class="flex items-center gap-2.5">
+                            <span class="badge-flash w-9 h-9 md:w-10 md:h-10 rounded-lg grid place-items-center text-lg md:text-xl">⚡</span>
                             <div>
-                                <h2 class="font-extrabold text-2xl md:text-3xl tracking-tight">FLASH SALE</h2>
-                                <p class="text-sm text-white/60">Promo terbatas — buruan, stok cepat habis!</p>
+                                <h2 class="font-extrabold text-lg md:text-xl tracking-tight leading-none">FLASH SALE</h2>
+                                <p class="text-[11px] md:text-xs text-white/55 mt-0.5">Promo terbatas — stok cepat habis!</p>
                             </div>
                         </div>
-                        <div id="flashsale-countdown" class="flex items-center gap-2 self-start md:self-auto">
-                            <span class="text-[11px] uppercase tracking-wider text-white/60 mr-1">Berakhir</span>
-                            <span id="fs-h" class="countdown-chip text-white font-mono font-bold rounded-lg px-3 py-2 min-w-[44px] text-center">00</span>
-                            <span class="font-bold">:</span>
-                            <span id="fs-m" class="countdown-chip text-white font-mono font-bold rounded-lg px-3 py-2 min-w-[44px] text-center">00</span>
-                            <span class="font-bold">:</span>
-                            <span id="fs-s" class="countdown-chip text-white font-mono font-bold rounded-lg px-3 py-2 min-w-[44px] text-center">00</span>
+                        <div id="flashsale-countdown" class="flex items-center gap-1">
+                            <span class="hidden sm:inline text-[10px] uppercase tracking-wider text-white/60 mr-1">Berakhir</span>
+                            <span id="fs-h" class="countdown-chip text-white font-mono font-bold rounded-md px-2 py-1.5 min-w-[34px] text-center text-sm">00</span>
+                            <span class="font-bold text-sm">:</span>
+                            <span id="fs-m" class="countdown-chip text-white font-mono font-bold rounded-md px-2 py-1.5 min-w-[34px] text-center text-sm">00</span>
+                            <span class="font-bold text-sm">:</span>
+                            <span id="fs-s" class="countdown-chip text-white font-mono font-bold rounded-md px-2 py-1.5 min-w-[34px] text-center text-sm">00</span>
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
+                    <div class="flex gap-2.5 md:gap-3 overflow-x-auto pb-1 -mx-1 px-1 snap-x snap-mandatory scrollbar-thin">
                         @foreach ($flashsales as $fs)
                             @php $variant = $fs->variant; $product = $variant?->product; @endphp
                             @if ($variant && $product)
                                 <a href="{{ route('checkout.show', [$product, $variant]) }}"
-                                   class="group rounded-2xl bg-white text-slate-900 overflow-hidden hover:-translate-y-1 transition shadow-lg shadow-black/30">
-                                    <div class="relative aspect-square bg-gradient-to-br from-slate-50 to-slate-200 overflow-hidden">
+                                   class="group shrink-0 w-[140px] sm:w-[150px] md:w-[160px] snap-start rounded-xl bg-white text-slate-900 overflow-hidden hover:-translate-y-0.5 transition shadow-md shadow-black/30">
+                                    <div class="relative aspect-[4/3] bg-gradient-to-br from-slate-50 to-slate-200 overflow-hidden">
                                         @if ($product->imageUrl())
                                             <img src="{{ $product->imageUrl() }}" alt="{{ $product->name }}" class="w-full h-full object-cover product-img">
                                         @else
-                                            <div class="w-full h-full grid place-items-center text-3xl text-slate-400">🎬</div>
+                                            <div class="w-full h-full grid place-items-center text-2xl text-slate-400">🎬</div>
                                         @endif
-                                        <span class="absolute top-2 left-2 badge-flash text-white text-xs font-bold rounded-md px-2 py-1">-{{ $fs->discountPercent() }}%</span>
-                                        <span class="absolute bottom-2 right-2 inline-flex items-center text-[10px] font-semibold rounded-md px-1.5 py-0.5 bg-slate-900/85 text-white">Sisa {{ $fs->remaining() }}</span>
+                                        <span class="absolute top-1.5 left-1.5 badge-flash text-white text-[10px] font-bold rounded px-1.5 py-0.5">-{{ $fs->discountPercent() }}%</span>
+                                        <span class="absolute bottom-1.5 right-1.5 inline-flex items-center text-[9px] font-semibold rounded px-1.5 py-0.5 bg-slate-900/85 text-white">Sisa {{ $fs->remaining() }}</span>
                                     </div>
-                                    <div class="p-3">
-                                        <div class="text-[10px] uppercase tracking-wider text-brand font-bold mb-1">{{ optional($product->category)->name }}</div>
-                                        <div class="font-semibold text-sm leading-tight line-clamp-2">{{ $product->name }}</div>
-                                        <div class="text-[11px] text-slate-500">{{ $variant->name }}</div>
-                                        <div class="mt-1.5 flex items-baseline gap-2">
-                                            <span class="font-extrabold text-rose-600 text-sm">Rp {{ number_format($fs->flash_price, 0, ',', '.') }}</span>
-                                            <span class="price-strike">Rp {{ number_format($variant->price, 0, ',', '.') }}</span>
+                                    <div class="p-2.5">
+                                        <div class="text-[9px] uppercase tracking-wider text-brand font-bold">{{ optional($product->category)->name }}</div>
+                                        <div class="font-semibold text-[12px] leading-tight line-clamp-2 mt-0.5">{{ $product->name }}</div>
+                                        <div class="text-[10px] text-slate-500 mt-0.5">{{ $variant->name }}</div>
+                                        <div class="mt-1.5 flex items-baseline gap-1.5 flex-wrap">
+                                            <span class="font-extrabold text-rose-600 text-[13px]">Rp {{ number_format($fs->flash_price, 0, ',', '.') }}</span>
+                                            <span class="price-strike text-[10px]">Rp {{ number_format($variant->price, 0, ',', '.') }}</span>
                                         </div>
                                     </div>
                                 </a>
@@ -335,11 +335,11 @@
                     @endphp
                     <article class="product-card group rounded-2xl bg-white border border-slate-200 overflow-hidden hover:border-brand hover:shadow-soft">
                         <a href="{{ route('products.show', $product) }}" class="block">
-                            <div class="relative aspect-square bg-gradient-to-br from-slate-50 to-slate-200 overflow-hidden">
+                            <div class="relative aspect-[5/4] bg-gradient-to-br from-slate-50 to-slate-200 overflow-hidden">
                                 @if ($product->imageUrl())
                                     <img src="{{ $product->imageUrl() }}" alt="{{ $product->name }}" class="product-img w-full h-full object-cover">
                                 @else
-                                    <div class="w-full h-full grid place-items-center text-5xl text-slate-300">🎬</div>
+                                    <div class="w-full h-full grid place-items-center text-3xl text-slate-300">🎬</div>
                                 @endif
                                 <div class="absolute inset-x-0 top-0 p-2 flex items-start justify-between gap-2 pointer-events-none">
                                     <div class="flex flex-col gap-1">

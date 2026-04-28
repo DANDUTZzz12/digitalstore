@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Products\Schemas;
 
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -27,6 +28,15 @@ class ProductForm
                 Textarea::make('description')
                     ->label('Deskripsi Lengkap')
                     ->rows(5)
+                    ->columnSpanFull(),
+                RichEditor::make('terms_html')
+                    ->label('Syarat & Ketentuan (SNK)')
+                    ->helperText('Tampil di halaman detail produk di bawah deskripsi. Boleh kosongkan kalau tidak ada SNK khusus.')
+                    ->toolbarButtons([
+                        'bold', 'italic', 'underline', 'strike', 'link',
+                        'bulletList', 'orderedList', 'h2', 'h3', 'blockquote',
+                        'codeBlock', 'undo', 'redo',
+                    ])
                     ->columnSpanFull(),
                 FileUpload::make('image')
                     ->label('Foto Produk')

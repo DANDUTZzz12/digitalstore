@@ -18,11 +18,11 @@
         <div class="grid md:grid-cols-2 gap-8 lg:gap-10">
             {{-- Gambar --}}
             <div class="rounded-3xl bg-white border border-slate-200 overflow-hidden shadow-card">
-                <div class="aspect-square bg-gradient-to-br from-slate-50 to-slate-100">
+                <div class="aspect-[4/3] md:aspect-[5/4] bg-gradient-to-br from-slate-50 to-slate-100">
                     @if ($product->imageUrl())
                         <img src="{{ $product->imageUrl() }}" alt="{{ $product->name }}" class="w-full h-full object-cover">
                     @else
-                        <div class="w-full h-full flex items-center justify-center text-7xl text-slate-300">🎬</div>
+                        <div class="w-full h-full flex items-center justify-center text-5xl text-slate-300">🎬</div>
                     @endif
                 </div>
             </div>
@@ -98,9 +98,23 @@
 
                 {{-- Deskripsi panjang --}}
                 @if ($product->description)
-                    <div class="mt-8 rounded-2xl border border-slate-200 bg-white p-5">
-                        <h3 class="font-bold mb-2">Deskripsi</h3>
+                    <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-5">
+                        <h3 class="font-bold mb-2 flex items-center gap-2">
+                            <svg class="w-4 h-4 text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+                            Deskripsi
+                        </h3>
                         <div class="prose-content text-slate-700 text-sm">{!! nl2br(e($product->description)) !!}</div>
+                    </div>
+                @endif
+
+                {{-- Syarat & Ketentuan --}}
+                @if ($product->terms_html)
+                    <div class="mt-4 rounded-2xl border border-amber-200 bg-amber-50/50 p-5">
+                        <h3 class="font-bold mb-2 flex items-center gap-2 text-amber-900">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+                            Syarat &amp; Ketentuan
+                        </h3>
+                        <div class="prose-content text-slate-700 text-sm">{!! $product->terms_html !!}</div>
                     </div>
                 @endif
 

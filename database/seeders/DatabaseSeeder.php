@@ -63,6 +63,7 @@ class DatabaseSeeder extends Seeder
             [
                 'description' => "Akun Netflix Sharing 4K UHD.\nGaransi full durasi. No share password.",
                 'short_description' => 'Streaming 4K UHD, garansi full durasi.',
+                'terms_html' => '<ul><li>Akun <strong>sharing</strong> — jangan ganti email, password, atau profil utama.</li><li>Garansi <strong>full durasi</strong> selama akun digunakan sesuai aturan.</li><li>Maks. <strong>1 device</strong> aktif per profil.</li><li>Klaim garansi via WhatsApp dengan menyertakan <em>order code</em>.</li></ul>',
                 'price' => 25000,
                 'is_auto_send' => true,
                 'is_best_seller' => true,
@@ -75,6 +76,7 @@ class DatabaseSeeder extends Seeder
             [
                 'description' => "CapCut Pro Private — 1 akun 1 user.\nBebas watermark, semua fitur pro aktif.",
                 'short_description' => 'Bebas watermark, semua fitur PRO aktif.',
+                'terms_html' => '<ul><li>Akun <strong>private</strong> — hanya untuk 1 user.</li><li>Garansi penuh selama durasi paket.</li><li>Tidak diperkenankan login di lebih dari 1 device aktif bersamaan.</li><li>Login pertama wajib lewat panduan yang diberikan di invoice.</li></ul>',
                 'price' => 15000,
                 'is_auto_send' => true,
                 'category_id' => $editing->id,
@@ -86,6 +88,7 @@ class DatabaseSeeder extends Seeder
             [
                 'description' => 'Spotify Premium slot Family, bebas iklan dan bisa offline.',
                 'short_description' => 'Slot Family, bebas iklan, bisa offline.',
+                'terms_html' => '<ul><li>Slot <strong>Family</strong> — wajib set lokasi sesuai instruksi di invoice.</li><li>Bebas iklan & bisa offline.</li><li>Garansi full durasi paket.</li><li>Dilarang ganti email/password slot, jika diganti garansi hangus.</li></ul>',
                 'price' => 10000,
                 'is_auto_send' => true,
                 'is_best_seller' => true,
