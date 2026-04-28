@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\SiteSetting;
 use App\Models\Stock;
+use App\Models\Testimonial;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -204,6 +205,48 @@ class RedesignFeaturesTest extends TestCase
         $b = SiteSetting::current();
         $this->assertSame($a->id, $b->id);
         $this->assertSame('Custom', $b->store_name);
+    }
+
+    public function test_active_testimonial_renders_on_homepage(): void
+    {
+        $this->makeProductWithVariant(); // homepage butuh produk supaya tidak fail
+
+        Testimonial::create([
+            'name' => 'Budi Demo',
+            'role' => 'Pelanggan',
+            'rating' => 5,
+            'content' => 'Layanan sangat memuaskan untuk testing.',
+            'is_active' => true,
+            'sort_order' => 0,
+        ]);
+
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('Budi Demo')
+            ->assertSee('Layanan sangat memuaskan untuk testing.');
+    }
+
+    public function test_inactive_testimonial_is_hidden_on_homepage(): void
+    {
+        $this->makeProductWithVariant();
+
+        Testimonial::create([
+            'name' => 'Hidden Reviewer',
+            'rating' => 4,
+            'content' => 'Should not appear.',
+            'is_active' => false,
+        ]);
+
+        $this->get('/')->assertDontSee('Hidden Reviewer');
+    }
+
+    public function test_testimonial_initials_built_from_name(): void
+    {
+        $t = new Testimonial(['name' => 'Andi Setiawan']);
+        $this->assertSame('AS', $t->initials());
+
+        $t2 = new Testimonial(['name' => 'Ani']);
+        $this->assertSame('A', $t2->initials());
     }
 
     public function test_homepage_renders_flashsale_when_active(): void

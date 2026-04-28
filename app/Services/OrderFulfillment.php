@@ -18,12 +18,20 @@ class OrderFulfillment
     /**
      * @param  array<string,mixed>  $context  Detail untuk audit log (metode bayar,
      *                                        amount asli dari gateway, source, dll).
+     * @param  bool  $allowFromTerminalStates  Bila true, izinkan transisi dari status
+     *                                         non-pending/non-paid (cancelled, refunded,
+     *                                         expired, failed) ke PAID. Hanya boleh
+     *                                         dipakai dari admin EditOrder yang merupakan
+     *                                         override eksplisit.
      * @return bool true jika order jadi PAID (termasuk kasus stok habis),
      *              false jika order tidak bisa diproses.
      */
-    public function markPaidAndAssignStock(Order $order, array $context = []): bool
-    {
-        return DB::transaction(function () use ($order, $context) {
+    public function markPaidAndAssignStock(
+        Order $order,
+        array $context = [],
+        bool $allowFromTerminalStates = false,
+    ): bool {
+        return DB::transaction(function () use ($order, $context, $allowFromTerminalStates) {
             /** @var Order $locked */
             $locked = Order::lockForUpdate()->find($order->id);
             if (! $locked) {
@@ -35,6 +43,20 @@ class OrderFulfillment
             // Idempotent: kalau sudah paid DAN stok sudah ter-assign, tidak ada yang perlu dikerjakan.
             if ($wasAlreadyPaid && $locked->stock_id) {
                 return true;
+            }
+
+            // Guard race condition (TOCTOU): pemanggil mengecek status di luar
+            // transaction — bisa berubah saat verifikasi via API berlangsung
+            // (Pakasir sampai ~10 detik). Setelah lock, tolak transisi dari
+            // status terminal (cancelled/refunded/expired/failed) kecuali admin
+            // memberi override eksplisit lewat parameter $allowFromTerminalStates.
+            if (! $locked->isPending() && ! $wasAlreadyPaid && ! $allowFromTerminalStates) {
+                Audit::log('order.transition_blocked', $locked, array_merge($context, [
+                    'current_status' => $locked->status,
+                    'reason' => 'not_pending_or_paid',
+                ]));
+
+                return false;
             }
 
             // Pilih stok available paling lama (FIFO) dan kunci baris-nya.

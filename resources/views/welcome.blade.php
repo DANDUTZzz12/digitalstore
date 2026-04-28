@@ -462,33 +462,38 @@
 </section>
 
 {{-- ================= TESTIMONI ================= --}}
+@if ($testimonials->isNotEmpty())
 <section class="py-14 md:py-20 bg-white border-y border-slate-100">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-10">
             <span class="inline-block text-[11px] uppercase tracking-wider font-bold text-brand mb-2">Testimoni</span>
             <h2 class="text-3xl md:text-4xl font-extrabold tracking-tight">Apa Kata Pelanggan Kami</h2>
         </div>
-        @php
-            $testimonials = [
-                ['name'=>'Rizky Pratama','role'=>'Content Creator','rating'=>5,'text'=>'Beli CapCut Pro langsung jadi dalam 30 detik. Auto-delivery beneran kerja. Recommended banget!','avatar'=>'R'],
-                ['name'=>'Sasha Indriani','role'=>'Mahasiswa','rating'=>5,'text'=>'Spotify-nya aman 6 bulan, harga jauh lebih murah dari official. Garansi juga responsive.','avatar'=>'S'],
-                ['name'=>'Bagus Wicaksono','role'=>'Freelancer','rating'=>5,'text'=>'Sudah langganan Netflix di sini 3x. Belum pernah ada masalah, support fast respon di WA.','avatar'=>'B'],
-            ];
-        @endphp
         <div class="grid md:grid-cols-3 gap-5">
             @foreach ($testimonials as $t)
                 <div class="rounded-2xl bg-gradient-to-br from-slate-50 to-white border border-slate-200 p-6 hover:shadow-card transition">
                     <div class="flex items-center gap-1 mb-3 text-amber-400">
-                        @for ($i = 0; $i < $t['rating']; $i++)
+                        @for ($i = 0; $i < $t->rating; $i++)
                             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.39 4.84L20 8l-4 3.9.94 5.46L12 14.77 7.06 17.36 8 11.9 4 8l5.61-1.16L12 2z"/></svg>
                         @endfor
+                        @for ($i = $t->rating; $i < 5; $i++)
+                            <svg class="w-4 h-4 text-slate-200" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.39 4.84L20 8l-4 3.9.94 5.46L12 14.77 7.06 17.36 8 11.9 4 8l5.61-1.16L12 2z"/></svg>
+                        @endfor
                     </div>
-                    <p class="text-slate-700 leading-relaxed text-sm">"{{ $t['text'] }}"</p>
+                    <p class="text-slate-700 leading-relaxed text-sm">"{{ $t->content }}"</p>
                     <div class="mt-5 flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-full bg-brand/15 text-brand grid place-items-center font-bold">{{ $t['avatar'] }}</div>
+                        @if ($t->avatarUrl())
+                            <img src="{{ $t->avatarUrl() }}" alt="{{ $t->name }}"
+                                 class="w-10 h-10 rounded-full object-cover ring-2 ring-brand/20"
+                                 loading="lazy">
+                        @else
+                            <div class="w-10 h-10 rounded-full bg-brand/15 text-brand grid place-items-center font-bold">{{ $t->initials() }}</div>
+                        @endif
                         <div>
-                            <div class="font-semibold text-sm">{{ $t['name'] }}</div>
-                            <div class="text-xs text-slate-500">{{ $t['role'] }}</div>
+                            <div class="font-semibold text-sm">{{ $t->name }}</div>
+                            @if ($t->role)
+                                <div class="text-xs text-slate-500">{{ $t->role }}</div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -496,6 +501,7 @@
         </div>
     </div>
 </section>
+@endif
 
 {{-- ================= CTA BANNER ================= --}}
 <section class="py-14 md:py-20">

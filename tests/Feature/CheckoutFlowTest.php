@@ -148,6 +148,52 @@ class CheckoutFlowTest extends TestCase
         $this->assertTrue($s->is_sold);
     }
 
+    public function test_fulfillment_blocks_transition_from_terminal_states(): void
+    {
+        // Skenario TOCTOU: webhook lulus pre-check (status=pending), API call
+        // lambat, di tengah jalan admin meng-cancel order. Saat lock,
+        // status sudah jadi 'cancelled' — fulfillment HARUS menolak transisi.
+        $cat = Category::create(['name' => 'X', 'slug' => 'x']);
+        $p = Product::create(['name' => 'Y', 'price' => 100, 'is_auto_send' => true, 'category_id' => $cat->id]);
+        $v = ProductVariant::create(['product_id' => $p->id, 'name' => '1', 'price' => 100]);
+        Stock::create([
+            'product_variant_id' => $v->id,
+            'email_or_phone' => 't@b.test',
+            'password' => 'p',
+            'is_sold' => false,
+        ]);
+
+        $order = Order::create([
+            'order_code' => 'TEST-CANCELLED',
+            'product_id' => $p->id,
+            'product_variant_id' => $v->id,
+            'amount' => 100,
+            'fee' => 0,
+            'total_payment' => 100,
+            'status' => Order::STATUS_CANCELLED,
+        ]);
+
+        /** @var OrderFulfillment $svc */
+        $svc = app(OrderFulfillment::class);
+
+        // Tanpa override → ditolak.
+        $this->assertFalse($svc->markPaidAndAssignStock($order, ['source' => 'webhook']));
+        $order->refresh();
+        $this->assertSame(Order::STATUS_CANCELLED, $order->status);
+        $this->assertNull($order->stock_id);
+        $this->assertSame(0, Stock::where('is_sold', true)->count());
+
+        // Dengan override eksplisit (admin EditOrder) → boleh transisi.
+        $this->assertTrue($svc->markPaidAndAssignStock(
+            $order,
+            ['source' => 'admin_manual'],
+            allowFromTerminalStates: true,
+        ));
+        $order->refresh();
+        $this->assertSame(Order::STATUS_PAID, $order->status);
+        $this->assertNotNull($order->stock_id);
+    }
+
     public function test_invoice_page_shows_credentials_only_when_paid(): void
     {
         $cat = Category::create(['name' => 'X', 'slug' => 'x']);

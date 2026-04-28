@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\SiteSetting;
 use App\Models\Stock;
+use App\Models\Testimonial;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -190,6 +191,25 @@ class DatabaseSeeder extends Seeder
                     'content' => $content,
                     'is_published' => true,
                     'published_at' => now(),
+                ]
+            );
+        }
+
+        // ---- Testimoni demo (admin bisa tambah/edit/hapus dari panel) ----
+        $testimonials = [
+            ['Rian Pratama', 'Content Creator', 5, 'Beli akun CapCut Pro langsung kelar 3 detik. Nggak ribet, ga pakai cari admin. Recommended banget.'],
+            ['Maya Saraswati', 'Mahasiswa', 5, 'Netflix-nya aman, garansi penuh, harga ramah kantong. Udah langganan 4 bulan tanpa kendala.'],
+            ['Bagas Wirawan', 'Pelanggan Setia', 5, 'Sudah order 8 kali di sini. Auto-delivery-nya ngebut, support WA juga fast response. Mantap!'],
+        ];
+        foreach ($testimonials as $i => [$name, $role, $rating, $content]) {
+            Testimonial::firstOrCreate(
+                ['name' => $name],
+                [
+                    'role' => $role,
+                    'rating' => $rating,
+                    'content' => $content,
+                    'is_active' => true,
+                    'sort_order' => $i,
                 ]
             );
         }

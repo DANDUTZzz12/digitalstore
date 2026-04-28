@@ -49,10 +49,16 @@ class EditOrder extends EditRecord
         $record->fill($dataWithoutStatus);
         $record->save();
 
-        app(OrderFulfillment::class)->markPaidAndAssignStock($record, [
-            'source' => 'admin_manual',
-            'admin_user_id' => auth()->id(),
-        ]);
+        // Admin EditOrder = override eksplisit — boleh transisi dari status
+        // terminal (cancelled/refunded/expired/failed) ke PAID.
+        app(OrderFulfillment::class)->markPaidAndAssignStock(
+            $record,
+            [
+                'source' => 'admin_manual',
+                'admin_user_id' => auth()->id(),
+            ],
+            allowFromTerminalStates: true,
+        );
         $record->refresh();
 
         if ($record->stock_id) {

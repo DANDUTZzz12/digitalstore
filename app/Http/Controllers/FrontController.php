@@ -8,6 +8,7 @@ use App\Models\Faq;
 use App\Models\Flashsale;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\Testimonial;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -52,6 +53,8 @@ class FrontController extends Controller
             'satisfaction' => 99,
         ];
 
+        $testimonials = Testimonial::active()->limit(6)->get();
+
         return view('welcome', [
             'categories' => $categories,
             'products' => $products,
@@ -60,6 +63,7 @@ class FrontController extends Controller
             'flashsales' => $flashsales,
             'articles' => $articles,
             'stats' => $stats,
+            'testimonials' => $testimonials,
         ]);
     }
 
