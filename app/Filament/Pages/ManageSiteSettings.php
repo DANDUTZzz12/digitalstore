@@ -10,6 +10,7 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
@@ -98,6 +99,28 @@ class ManageSiteSettings extends Page implements HasForms
                         TextInput::make('telegram_url')->label('Telegram URL')->url(),
                         TextInput::make('facebook_url')->label('Facebook URL')->url(),
                         TextInput::make('whatsapp_channel_url')->label('WhatsApp Channel URL')->url()->columnSpanFull(),
+                    ]),
+
+                Section::make('Fonnte WhatsApp Gateway (Auto-Kirim Akun)')
+                    ->description('Auto-kirim kredensial akun ke WhatsApp customer setelah pembayaran PAID. Daftar di https://fonnte.com untuk dapat API token.')
+                    ->columns(2)
+                    ->schema([
+                        Toggle::make('fonnte_auto_send_credentials')
+                            ->label('Aktifkan auto-kirim WA')
+                            ->helperText('Kalau ON, kredensial akan otomatis dikirim ke customer.customer_phone via Fonnte setelah order PAID & stok ter-assign.')
+                            ->columnSpanFull(),
+                        TextInput::make('fonnte_api_key')
+                            ->label('Fonnte API Token')
+                            ->password()
+                            ->revealable()
+                            ->placeholder('Token dari fonnte.com → Device → API')
+                            ->columnSpanFull(),
+                        Textarea::make('fonnte_credentials_template')
+                            ->label('Template Pesan (opsional)')
+                            ->rows(8)
+                            ->placeholder('Kosongkan untuk pakai template default. Placeholder: {{order_code}} {{product}} {{variant}} {{email}} {{password}} {{additional_info}}')
+                            ->helperText('Setiap placeholder akan diganti dengan data order saat pesan dikirim.')
+                            ->columnSpanFull(),
                     ]),
 
                 Section::make('Konten Halaman Statis')

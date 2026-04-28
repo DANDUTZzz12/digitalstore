@@ -27,7 +27,19 @@ class SiteSetting extends Model
         'about_html',
         'footer_about',
         'support_hours',
+        'fonnte_api_key',
+        'fonnte_auto_send_credentials',
+        'fonnte_credentials_template',
     ];
+
+    /** Fonnte API key disimpan terenkripsi (AES-256-CBC) — sensitive credential. */
+    protected function casts(): array
+    {
+        return [
+            'fonnte_api_key' => 'encrypted',
+            'fonnte_auto_send_credentials' => 'boolean',
+        ];
+    }
 
     /** Cache per-request supaya SiteSetting hanya di-query 1x. */
     protected static ?self $instance = null;

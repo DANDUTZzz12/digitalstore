@@ -31,7 +31,8 @@ class OrderFulfillment
         array $context = [],
         bool $allowFromTerminalStates = false,
     ): bool {
-        return DB::transaction(function () use ($order, $context, $allowFromTerminalStates) {
+        $assignedStock = false;
+        $result = DB::transaction(function () use ($order, $context, $allowFromTerminalStates, &$assignedStock) {
             /** @var Order $locked */
             $locked = Order::lockForUpdate()->find($order->id);
             if (! $locked) {
@@ -96,6 +97,7 @@ class OrderFulfillment
             }
 
             $locked->save();
+            $assignedStock = (bool) $stock;
 
             // Counter flashsale + sold_count produk hanya di-increment sekali,
             // saat transisi pertama kali ke PAID. Hindari double-count saat
@@ -119,5 +121,13 @@ class OrderFulfillment
 
             return true;
         });
+
+        // Auto-kirim kredensial via Fonnte WA — di luar transaction supaya HTTP call
+        // tidak block lock DB. Service handle exception sendiri (return false, gak throw).
+        if ($result && $assignedStock) {
+            app(FonnteWhatsApp::class)->sendCredentials($order->fresh(['stock', 'product', 'variant']));
+        }
+
+        return $result;
     }
 }

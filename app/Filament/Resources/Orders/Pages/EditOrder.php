@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Orders\Pages;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Models\Order;
 use App\Models\Stock;
+use App\Services\FonnteWhatsApp;
 use App\Services\OrderFulfillment;
 use App\Support\Audit;
 use Filament\Actions\Action;
@@ -77,9 +78,18 @@ class EditOrder extends EditRecord
                         'admin_user_id' => auth()->id(),
                     ]);
 
+                    // Auto-kirim ke WA customer kalau Fonnte aktif. Skip diam-diam
+                    // kalau toggle off / API key kosong / no phone.
+                    $waSent = app(FonnteWhatsApp::class)->sendCredentials(
+                        $order->fresh(['stock', 'product', 'variant'])
+                    );
+
                     Notification::make()
                         ->title('Akun berhasil dikirim ke pembeli.')
-                        ->body('Kredensial sudah tampil di halaman invoice. Pembeli bisa menghubungi admin via tombol WhatsApp di invoice kalau butuh klarifikasi.')
+                        ->body($waSent
+                            ? 'Kredensial sudah tampil di invoice publik dan dikirim ke WhatsApp customer via Fonnte.'
+                            : 'Kredensial sudah tampil di invoice publik. (Auto-kirim WA dilewati — cek Site Settings → Fonnte kalau ingin aktifkan.)'
+                        )
                         ->success()
                         ->send();
 
