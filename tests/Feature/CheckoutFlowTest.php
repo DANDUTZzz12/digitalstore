@@ -111,6 +111,43 @@ class CheckoutFlowTest extends TestCase
         $this->assertSame(1, Stock::where('is_sold', true)->count());
     }
 
+    public function test_fulfillment_rescues_paid_order_with_missing_stock(): void
+    {
+        // Skenario: admin sebelumnya manual mark order PAID tanpa lewat
+        // OrderFulfillment, lalu baru memasukkan stok untuk varian itu.
+        // Pemanggilan ulang harus meng-assign stok ke order yang sudah paid.
+        $cat = Category::create(['name' => 'X', 'slug' => 'x']);
+        $p = Product::create(['name' => 'Y', 'price' => 100, 'is_auto_send' => true, 'category_id' => $cat->id]);
+        $v = ProductVariant::create(['product_id' => $p->id, 'name' => '1', 'price' => 100]);
+
+        $order = Order::create([
+            'order_code' => 'TEST-RESCUE',
+            'product_id' => $p->id,
+            'product_variant_id' => $v->id,
+            'amount' => 100,
+            'fee' => 0,
+            'total_payment' => 100,
+            'status' => Order::STATUS_PAID, // sudah paid, tapi stock_id null
+        ]);
+
+        // Stok ditambahkan SETELAH order paid
+        $s = Stock::create([
+            'product_variant_id' => $v->id,
+            'email_or_phone' => 'rescue@b.test',
+            'password' => 'p',
+            'is_sold' => false,
+        ]);
+
+        /** @var OrderFulfillment $svc */
+        $svc = app(OrderFulfillment::class);
+        $this->assertTrue($svc->markPaidAndAssignStock($order));
+
+        $order->refresh();
+        $s->refresh();
+        $this->assertSame($s->id, $order->stock_id);
+        $this->assertTrue($s->is_sold);
+    }
+
     public function test_invoice_page_shows_credentials_only_when_paid(): void
     {
         $cat = Category::create(['name' => 'X', 'slug' => 'x']);

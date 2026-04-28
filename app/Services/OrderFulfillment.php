@@ -30,20 +30,26 @@ class OrderFulfillment
                 return false;
             }
 
-            // Idempotent: jika sudah paid, tidak ada yang perlu dikerjakan.
-            if ($locked->isPaid()) {
+            $wasAlreadyPaid = $locked->isPaid();
+
+            // Idempotent: kalau sudah paid DAN stok sudah ter-assign, tidak ada yang perlu dikerjakan.
+            if ($wasAlreadyPaid && $locked->stock_id) {
                 return true;
             }
 
             // Pilih stok available paling lama (FIFO) dan kunci baris-nya.
+            // Jalan walaupun order sudah paid (kasus: admin manual mark paid duluan,
+            // baru menambahkan stok — ini "rescue" agar stok tetap auto-assigned).
             $stock = Stock::where('product_variant_id', $locked->product_variant_id)
                 ->where('is_sold', false)
                 ->orderBy('id')
                 ->lockForUpdate()
                 ->first();
 
-            $locked->status = Order::STATUS_PAID;
-            $locked->paid_at = now();
+            if (! $wasAlreadyPaid) {
+                $locked->status = Order::STATUS_PAID;
+                $locked->paid_at = now();
+            }
             if (! empty($context['payment_method'])) {
                 $locked->payment_method = (string) $context['payment_method'];
             }
@@ -69,22 +75,25 @@ class OrderFulfillment
 
             $locked->save();
 
-            // Increment counter flashsale (kalau order pakai harga flashsale)
-            // dan counter sold_count produk untuk fitur "best seller".
-            if ($locked->product_variant_id) {
-                $fs = Flashsale::active()
-                    ->where('product_variant_id', $locked->product_variant_id)
-                    ->lockForUpdate()
-                    ->first();
-                if ($fs && $locked->amount === (int) $fs->flash_price) {
-                    $fs->increment('sold');
+            // Counter flashsale + sold_count produk hanya di-increment sekali,
+            // saat transisi pertama kali ke PAID. Hindari double-count saat
+            // re-run untuk rescue stock assignment.
+            if (! $wasAlreadyPaid) {
+                if ($locked->product_variant_id) {
+                    $fs = Flashsale::active()
+                        ->where('product_variant_id', $locked->product_variant_id)
+                        ->lockForUpdate()
+                        ->first();
+                    if ($fs && $locked->amount === (int) $fs->flash_price) {
+                        $fs->increment('sold');
+                    }
                 }
-            }
-            if ($locked->product_id) {
-                Product::whereKey($locked->product_id)->increment('sold_count');
-            }
+                if ($locked->product_id) {
+                    Product::whereKey($locked->product_id)->increment('sold_count');
+                }
 
-            Audit::log('order.paid', $locked, $context);
+                Audit::log('order.paid', $locked, $context);
+            }
 
             return true;
         });
