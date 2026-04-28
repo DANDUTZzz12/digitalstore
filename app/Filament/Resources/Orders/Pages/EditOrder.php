@@ -22,13 +22,22 @@ class EditOrder extends EditRecord
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
         /** @var Order $record */
-        $becomingPaid = ($data['status'] ?? null) === Order::STATUS_PAID
+        $incomingStatus = $data['status'] ?? $record->status;
+
+        // Transisi pertama ke PAID — jalankan fulfillment + assign stok.
+        $becomingPaid = $incomingStatus === Order::STATUS_PAID
             && $record->status !== Order::STATUS_PAID;
 
-        $alreadyPaidNoStock = $record->isPaid() && ! $record->stock_id;
+        // Order sudah PAID, tidak ada perubahan status, tapi stock_id masih null
+        // (rescue case: stok ditambahkan setelah pembayaran). Hanya rescue saat
+        // admin tetap mempertahankan status PAID — kalau admin justru mengubah
+        // status ke refunded/cancelled/dll, kita HARUS hormati perubahan itu
+        // dan jalankan flow normal supaya status tidak hilang diam-diam.
+        $rescuePaidWithoutStock = $incomingStatus === Order::STATUS_PAID
+            && $record->isPaid()
+            && ! $record->stock_id;
 
-        // Kalau bukan transisi/rescue ke paid → flow normal Filament.
-        if (! $becomingPaid && ! $alreadyPaidNoStock) {
+        if (! $becomingPaid && ! $rescuePaidWithoutStock) {
             return parent::handleRecordUpdate($record, $data);
         }
 
