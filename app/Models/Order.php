@@ -21,6 +21,7 @@ class Order extends Model
 
     protected $fillable = [
         'order_code',
+        'user_id',
         'product_id',
         'product_variant_id',
         'stock_id',
@@ -45,6 +46,11 @@ class Order extends Model
             'paid_at' => 'datetime',
             'expired_at' => 'datetime',
         ];
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function product(): BelongsTo

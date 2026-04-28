@@ -9,6 +9,7 @@ use App\Services\PakasirService;
 use App\Support\Audit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -68,9 +69,12 @@ class CheckoutController extends Controller
         $fee = 0;
         $total = $amount + $fee;
 
-        $order = DB::transaction(function () use ($variant, $data, $amount, $fee, $total) {
+        $userId = Auth::id();
+
+        $order = DB::transaction(function () use ($variant, $data, $amount, $fee, $total, $userId) {
             return Order::create([
                 'order_code' => $this->generateOrderCode(),
+                'user_id' => $userId, // null untuk guest
                 'product_id' => $variant->product_id,
                 'product_variant_id' => $variant->id,
                 'customer_email' => $data['customer_email'],

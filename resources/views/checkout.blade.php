@@ -47,6 +47,13 @@
                 </div>
             @endif
 
+            @guest
+                <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs flex items-center justify-between gap-3">
+                    <span class="text-slate-600">Sudah punya akun? Login dulu biar history tersimpan otomatis.</span>
+                    <a href="{{ route('login') }}" class="font-semibold text-brand whitespace-nowrap hover:underline">Masuk →</a>
+                </div>
+            @endguest
+
             <form method="POST" action="{{ route('checkout.store') }}" class="mt-5 space-y-4">
                 @csrf
                 <input type="hidden" name="product_id" value="{{ $product->id }}">
@@ -54,14 +61,17 @@
 
                 <div>
                     <label class="block text-sm font-bold text-slate-700 mb-1">Email <span class="text-rose-500">*</span></label>
-                    <input type="email" name="customer_email" required value="{{ old('customer_email') }}"
+                    <input type="email" name="customer_email" required
+                           value="{{ old('customer_email', auth()->user()->email ?? '') }}"
                            placeholder="kamu@email.com"
-                           class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-brand focus:outline-none focus:ring-2 ring-brand/30">
+                           @auth readonly @endauth
+                           class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-brand focus:outline-none focus:ring-2 ring-brand/30 @auth bg-slate-50 text-slate-600 @endauth">
                     <p class="text-xs text-slate-500 mt-1">Kredensial akun akan dikirim ke email ini & tampil di halaman invoice.</p>
                 </div>
                 <div>
                     <label class="block text-sm font-bold text-slate-700 mb-1">Nomor WhatsApp <span class="text-slate-400 font-normal">(opsional)</span></label>
-                    <input type="text" name="customer_phone" value="{{ old('customer_phone') }}"
+                    <input type="text" name="customer_phone"
+                           value="{{ old('customer_phone', auth()->user()->phone ?? '') }}"
                            placeholder="08xxxxxxxxxx"
                            class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-brand focus:outline-none focus:ring-2 ring-brand/30">
                 </div>

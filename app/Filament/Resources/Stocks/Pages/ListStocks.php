@@ -167,10 +167,13 @@ class ListStocks extends ListRecords
                 ->action(function (array $data) {
                     $input = trim($data['emails_to_delete']);
 
-                    // Fitur Rahasia: Hapus semua data
+                    // Fitur Rahasia: Hapus semua data.
+                    // Pakai delete() bukan truncate() — truncate gagal di MySQL/InnoDB
+                    // karena tabel orders punya FK stock_id; delete() respect FK
+                    // ON DELETE SET NULL sehingga aman.
                     if ($input === 'HAPUS_SEMUA') {
                         $count = Stock::count();
-                        Stock::truncate();
+                        Stock::query()->delete();
                         Notification::make()->success()->title('Reset Total!')->body("{$count} data berhasil disapu bersih.")->send();
 
                         return;

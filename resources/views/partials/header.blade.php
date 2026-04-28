@@ -22,13 +22,32 @@
 
         <div class="flex-1"></div>
 
-        @if (! empty($site?->wa_number))
-            <a href="{{ $site?->waLink() }}" target="_blank" rel="noopener"
-               class="hidden md:inline-flex items-center gap-2 rounded-full text-sm font-semibold px-4 py-2 btn-brand transition">
-                <svg viewBox="0 0 24 24" class="w-4 h-4" fill="currentColor" aria-hidden="true"><path d="M19.07 4.93A10 10 0 0 0 4.13 18.4L3 22l3.72-1.1A10 10 0 1 0 19.07 4.93Z"/></svg>
-                Chat Admin
-            </a>
-        @endif
+        <div class="hidden md:flex items-center gap-2">
+            @auth
+                <a href="{{ route('account.index') }}"
+                   class="inline-flex items-center gap-2 rounded-full text-sm font-semibold px-4 py-2 border border-slate-200 hover:border-brand hover:text-brand text-slate-700 transition">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+                    {{ \Illuminate\Support\Str::limit(auth()->user()->name, 16) }}
+                </a>
+            @else
+                <a href="{{ route('login') }}"
+                   class="inline-flex items-center gap-1.5 rounded-full text-sm font-semibold px-4 py-2 text-slate-700 hover:text-brand transition">
+                    Masuk
+                </a>
+                <a href="{{ route('register') }}"
+                   class="inline-flex items-center gap-1.5 rounded-full text-sm font-semibold px-4 py-2 border border-slate-200 hover:border-brand hover:text-brand text-slate-700 transition">
+                    Daftar
+                </a>
+            @endauth
+
+            @if (! empty($site?->wa_number))
+                <a href="{{ $site?->waLink() }}" target="_blank" rel="noopener"
+                   class="inline-flex items-center gap-2 rounded-full text-sm font-semibold px-4 py-2 btn-brand transition">
+                    <svg viewBox="0 0 24 24" class="w-4 h-4" fill="currentColor" aria-hidden="true"><path d="M19.07 4.93A10 10 0 0 0 4.13 18.4L3 22l3.72-1.1A10 10 0 1 0 19.07 4.93Z"/></svg>
+                    Chat Admin
+                </a>
+            @endif
+        </div>
 
         <button type="button" onclick="document.getElementById('mob-nav').classList.toggle('hidden')"
                 class="md:hidden p-2 rounded-lg border border-slate-200 text-slate-700">
@@ -44,6 +63,15 @@
             <a href="{{ route('pages.faq') }}" class="py-2">FAQ</a>
             <a href="{{ route('pages.how-to-order') }}" class="py-2">Cara Pemesanan</a>
             <a href="{{ route('pages.terms') }}" class="py-2">Ketentuan Order</a>
+            <hr class="my-2 border-slate-200">
+            @auth
+                <a href="{{ route('account.index') }}" class="py-2 font-semibold">Akun Saya</a>
+                <a href="{{ route('account.orders.index') }}" class="py-2">History Pesanan</a>
+                <form method="POST" action="{{ route('logout') }}">@csrf<button type="submit" class="py-2 text-rose-600 text-left w-full">Keluar</button></form>
+            @else
+                <a href="{{ route('login') }}" class="py-2 font-semibold">Masuk</a>
+                <a href="{{ route('register') }}" class="py-2">Daftar</a>
+            @endauth
             @if (! empty($site?->wa_number))
                 <a href="{{ $site?->waLink() }}" target="_blank" rel="noopener" class="py-2 mt-1 inline-flex items-center justify-center rounded-lg btn-brand font-semibold">Chat Admin</a>
             @endif

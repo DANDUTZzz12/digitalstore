@@ -23,14 +23,15 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // ---- Admin user default ----
-        User::updateOrCreate(
-            ['email' => 'admin@akhpremium.test'],
-            [
-                'name' => 'Admin',
-                'password' => Hash::make('password'),
-                'is_admin' => true,
-            ]
-        );
+        // is_admin di-set via forceFill karena sengaja TIDAK ada di $fillable
+        // (cegah mass-assignment privilege escalation).
+        $admin = User::firstOrNew(['email' => 'admin@akhpremium.test']);
+        $admin->fill([
+            'name' => 'Admin',
+            'password' => Hash::make('password'),
+        ]);
+        $admin->forceFill(['is_admin' => true]);
+        $admin->save();
 
         // ---- Site Settings (singleton) ----
         SiteSetting::updateOrCreate(
