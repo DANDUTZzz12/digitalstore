@@ -122,6 +122,12 @@ class CheckoutController extends Controller
             }
         }
 
-        return 'AKH-'.now()->format('Ymd').'-'.strtoupper(Str::random(10));
+        // Fallback 10-char tetap loop sampai unik supaya gak ada celah 500
+        // dari unique constraint violation, walau probabilitas hampir 0.
+        do {
+            $fallback = 'AKH-'.now()->format('Ymd').'-'.strtoupper(Str::random(10));
+        } while (Order::where('order_code', $fallback)->exists());
+
+        return $fallback;
     }
 }

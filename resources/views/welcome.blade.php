@@ -328,7 +328,7 @@
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
                 @foreach ($products as $product)
                     @php
-                        $stockSum = $product->variants->sum(fn ($v) => $v->stocks()->where('is_sold', false)->count());
+                        $stockSum = $product->variants->sum(fn ($v) => $v->available_stocks_count ?? 0);
                         $lowest = $product->lowestPrice();
                         $firstVariant = $product->variants->first();
                         $fs = $firstVariant?->activeFlashsale();

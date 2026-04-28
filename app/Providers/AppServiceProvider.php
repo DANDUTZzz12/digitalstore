@@ -25,17 +25,14 @@ class AppServiceProvider extends ServiceProvider
         }
 
         // Bagikan SiteSetting (singleton) ke semua view sebagai $site.
+        // Pakai View::share (sekali per request) — hindari View::composer('*')
+        // yang re-fire & re-query DB tiap partial.
         // Aman terhadap state pre-migration (saat install).
-        View::composer('*', function ($view) {
+        try {
+            $site = Schema::hasTable('site_settings') ? SiteSetting::current() : null;
+        } catch (\Throwable $e) {
             $site = null;
-            try {
-                if (Schema::hasTable('site_settings')) {
-                    $site = SiteSetting::current();
-                }
-            } catch (\Throwable $e) {
-                $site = null;
-            }
-            $view->with('site', $site);
-        });
+        }
+        View::share('site', $site);
     }
 }

@@ -60,6 +60,12 @@ class Product extends Model
 
     public function lowestPrice(): int
     {
+        // Pakai relation collection kalau sudah di-eager-load (hindari N+1).
+        // Fallback ke query DB hanya kalau variants belum dimuat.
+        if ($this->relationLoaded('variants')) {
+            return (int) ($this->variants->min('price') ?? $this->price);
+        }
+
         return (int) ($this->variants()->min('price') ?? $this->price);
     }
 }

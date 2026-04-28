@@ -18,8 +18,18 @@ class FrontController extends Controller
     {
         $categories = Category::orderBy('name')->get();
 
+        // Eager-load semua yang dipakai di card homepage:
+        // - category: untuk badge kategori
+        // - variants + stocks_count: hindari N+1 saat hitung total stok per produk
+        // - variants.activeFlashsales (active scope) untuk badge Flash di card
         $query = Product::query()
-            ->with(['category', 'variants'])
+            ->with([
+                'category',
+                'variants' => fn ($q) => $q->withCount([
+                    'stocks as available_stocks_count' => fn ($s) => $s->where('is_sold', false),
+                ]),
+                'variants.activeFlashsales',
+            ])
             ->orderBy('is_best_seller', 'desc')
             ->orderBy('sold_count', 'desc')
             ->orderBy('name');

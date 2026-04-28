@@ -41,8 +41,22 @@ class ProductVariant extends Model
         return $this->hasMany(Flashsale::class);
     }
 
+    /**
+     * Relasi yang HANYA berisi flashsale aktif (untuk eager-loading di card homepage).
+     * Pakai scope yang sama dengan Flashsale::active() supaya logic konsisten.
+     */
+    public function activeFlashsales(): HasMany
+    {
+        return $this->hasMany(Flashsale::class)->active();
+    }
+
     public function activeFlashsale(): ?Flashsale
     {
+        // Kalau activeFlashsales sudah di-eager-load, pakai collection-nya.
+        if ($this->relationLoaded('activeFlashsales')) {
+            return $this->activeFlashsales->first();
+        }
+
         return Flashsale::active()->where('product_variant_id', $this->id)->first();
     }
 
