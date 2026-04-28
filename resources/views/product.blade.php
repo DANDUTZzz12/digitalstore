@@ -34,7 +34,8 @@
                 @endif
                 <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">{{ $product->name }}</h1>
                 <div class="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                    @if ($product->is_auto_send)
+                    @php $hasAuto = $product->variants->contains(fn ($v) => $v->isAutoSend()); @endphp
+                    @if ($hasAuto)
                         <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-700 px-2 py-0.5 font-semibold">⚡ Auto-Delivery</span>
                     @endif
                     @if ($product->is_best_seller)
@@ -54,7 +55,7 @@
                     <div class="px-5 py-3 text-sm font-bold uppercase tracking-wide text-slate-700">Pilih Paket</div>
                     @forelse ($product->variants as $variant)
                         @php
-                            $isOOS = $product->is_auto_send && $variant->available_stocks_count <= 0;
+                            $isOOS = $variant->isAutoSend() && $variant->available_stocks_count <= 0;
                             $fs = $variant->activeFlashsale();
                             $effective = $variant->effectivePrice();
                         @endphp
@@ -67,10 +68,10 @@
                                     @endif
                                 </div>
                                 <div class="text-xs text-slate-500 mt-0.5">
-                                    @if ($product->is_auto_send)
+                                    @if ($variant->isAutoSend())
                                         Stok: {{ $variant->available_stocks_count }} · Auto-delivery
                                     @else
-                                        Manual delivery
+                                        Manual delivery (admin kirim setelah pembayaran)
                                     @endif
                                 </div>
                             </div>

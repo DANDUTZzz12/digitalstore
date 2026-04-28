@@ -28,7 +28,10 @@ class CheckoutController extends Controller
 
         $available = $variant->availableStocks()->count();
 
-        if ($available <= 0 && $product->is_auto_send) {
+        // Hanya block kalau VARIAN ini set auto-send dan stoknya nol.
+        // Varian manual boleh tetap di-checkout walau stocknya kosong —
+        // admin akan input akun manual setelah PAID.
+        if ($available <= 0 && $variant->isAutoSend()) {
             return redirect()
                 ->route('products.show', $product)
                 ->with('error', 'Mohon maaf, stok untuk varian ini sedang kosong.');

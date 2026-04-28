@@ -61,7 +61,8 @@ class ProductForm
                     ->label('Harga Utama (display)'),
 
                 Toggle::make('is_auto_send')
-                    ->label('Auto-Delivery (kirim akun otomatis dari stok)')
+                    ->label('Auto-Delivery default (kirim akun otomatis dari stok)')
+                    ->helperText('Setiap varian bisa override setting ini secara individual.')
                     ->default(true),
                 Toggle::make('is_best_seller')
                     ->label('Tandai sebagai Best Seller')
@@ -79,6 +80,17 @@ class ProductForm
                             ->numeric()
                             ->prefix('Rp')
                             ->required(),
+                        Select::make('is_auto_send')
+                            ->label('Mode Delivery')
+                            ->helperText('Default = ikut setting produk. Override kalau varian ini perlu mode berbeda.')
+                            ->options([
+                                '' => 'Default (ikut produk)',
+                                '1' => 'Auto (kirim dari stok otomatis)',
+                                '0' => 'Manual (admin input akun setelah PAID)',
+                            ])
+                            ->placeholder('Default (ikut produk)')
+                            ->dehydrateStateUsing(fn ($state) => $state === '' ? null : (bool) $state)
+                            ->columnSpan(2),
                     ])
                     ->columns(2)
                     ->columnSpanFull()

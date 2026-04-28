@@ -25,14 +25,20 @@ class AppServiceProvider extends ServiceProvider
         }
 
         // Bagikan SiteSetting (singleton) ke semua view sebagai $site.
-        // Pakai View::share (sekali per request) — hindari View::composer('*')
-        // yang re-fire & re-query DB tiap partial.
+        // View::composer('*') tetap fire per partial, tapi SiteSetting::current()
+        // sekarang punya cache statis per-request (lihat SiteSetting model) jadi
+        // hanya 1 query DB per request meski composer fire banyak kali.
         // Aman terhadap state pre-migration (saat install).
-        try {
-            $site = Schema::hasTable('site_settings') ? SiteSetting::current() : null;
-        } catch (\Throwable $e) {
+        View::composer('*', function ($view) {
             $site = null;
-        }
-        View::share('site', $site);
+            try {
+                if (Schema::hasTable('site_settings')) {
+                    $site = SiteSetting::current();
+                }
+            } catch (\Throwable $e) {
+                $site = null;
+            }
+            $view->with('site', $site);
+        });
     }
 }

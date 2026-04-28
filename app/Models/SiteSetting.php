@@ -29,12 +29,27 @@ class SiteSetting extends Model
         'support_hours',
     ];
 
+    /** Cache per-request supaya SiteSetting hanya di-query 1x. */
+    protected static ?self $instance = null;
+
     /** Singleton pattern: ambil row pertama, atau buat default. */
     public static function current(): self
     {
-        return static::firstOrCreate(['id' => 1], [
+        return self::$instance ??= static::firstOrCreate(['id' => 1], [
             'store_name' => config('app.name', 'Akhpremium Store'),
         ]);
+    }
+
+    /** Reset cache (dipanggil otomatis saat row ter-update). */
+    public static function clearCache(): void
+    {
+        self::$instance = null;
+    }
+
+    protected static function booted(): void
+    {
+        static::saved(fn () => static::clearCache());
+        static::deleted(fn () => static::clearCache());
     }
 
     public function waLink(?string $message = null): ?string

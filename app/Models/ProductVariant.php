@@ -12,13 +12,28 @@ class ProductVariant extends Model
         'product_id',
         'name',
         'price',
+        'is_auto_send',
     ];
 
     protected function casts(): array
     {
         return [
             'price' => 'integer',
+            'is_auto_send' => 'boolean',
         ];
+    }
+
+    /**
+     * Auto-delivery dipakai per-varian. Kalau kolom is_auto_send di varian
+     * di-set (true/false), pakai itu. Kalau NULL, fallback ke setting product.
+     */
+    public function isAutoSend(): bool
+    {
+        if ($this->is_auto_send !== null) {
+            return (bool) $this->is_auto_send;
+        }
+
+        return (bool) ($this->product?->is_auto_send ?? false);
     }
 
     public function product(): BelongsTo
