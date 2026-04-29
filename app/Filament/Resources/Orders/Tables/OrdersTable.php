@@ -18,6 +18,7 @@ class OrdersTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(['items.product', 'items.variant', 'items.stock', 'product', 'variant', 'stock']))
             ->columns([
                 TextColumn::make('order_code')->label('Kode')->searchable()->copyable(),
                 TextColumn::make('product.name')

@@ -203,10 +203,16 @@ class OrderForm
     {
         $assigned = 0;
         foreach ($itemsState as $itemKey => $itemData) {
-            // Repeater key bisa string (saat baru) atau id (saat existing). Kita
-            // peduli ID asli OrderItem-nya — Filament passes record id sebagai key
-            // saat relationship() dipakai.
-            $orderItemId = is_numeric($itemKey) ? (int) $itemKey : null;
+            // Filament Repeater dengan relationship() pakai key "record-{id}".
+            // Untuk item baru pakai UUID. Kita hanya peduli existing items.
+            $orderItemId = null;
+            if (is_string($itemKey) && str_starts_with($itemKey, 'record-')) {
+                $orderItemId = (int) substr($itemKey, 7);
+            } elseif (is_numeric($itemKey)) {
+                $orderItemId = (int) $itemKey;
+            } elseif (isset($itemData['id']) && is_numeric($itemData['id'])) {
+                $orderItemId = (int) $itemData['id'];
+            }
             if (! $orderItemId) {
                 continue;
             }
