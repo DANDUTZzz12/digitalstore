@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\Voucher;
 use App\Services\PakasirService;
 use App\Support\Audit;
 use Illuminate\Http\RedirectResponse;
@@ -55,6 +56,7 @@ class CheckoutController extends Controller
             'product_variant_id' => ['required', 'integer', 'exists:product_variants,id'],
             'customer_email' => ['required', 'email', 'max:255'],
             'customer_phone' => ['nullable', 'string', 'max:32', 'regex:/^[0-9+\- ]+$/'],
+            'voucher_code' => ['nullable', 'string', 'max:64'],
         ]);
 
         /** @var ProductVariant $variant */
@@ -69,20 +71,41 @@ class CheckoutController extends Controller
         // Hitung harga ULANG di server — jangan percaya input client.
         // Pakai harga flashsale kalau sedang aktif untuk varian ini.
         $amount = $variant->effectivePrice();
-        $fee = 0;
-        $total = $amount + $fee;
+        $discount = 0;
+        $voucher = null;
+        if (! empty($data['voucher_code'])) {
+            $voucher = Voucher::active()
+                ->whereRaw('LOWER(code) = ?', [strtolower(trim($data['voucher_code']))])
+                ->first();
 
+            if (! $voucher) {
+                return back()->withInput()->withErrors([
+                    'voucher_code' => 'Kode voucher tidak ditemukan atau sudah kadaluarsa.',
+                ]);
+            }
+            $discount = $voucher->discountFor($amount);
+            if ($discount <= 0) {
+                return back()->withInput()->withErrors([
+                    'voucher_code' => 'Voucher tidak memenuhi syarat (cek minimal pembelian / sisa kuota).',
+                ]);
+            }
+        }
+
+        $fee = 0;
+        $total = max(0, $amount - $discount) + $fee;
         $userId = Auth::id();
 
-        $order = DB::transaction(function () use ($variant, $data, $amount, $fee, $total, $userId) {
-            return Order::create([
+        $order = DB::transaction(function () use ($variant, $data, $amount, $discount, $fee, $total, $userId, $voucher) {
+            $order = Order::create([
                 'order_code' => $this->generateOrderCode(),
                 'user_id' => $userId, // null untuk guest
                 'product_id' => $variant->product_id,
                 'product_variant_id' => $variant->id,
+                'voucher_id' => $voucher?->id,
                 'customer_email' => $data['customer_email'],
                 'customer_phone' => $data['customer_phone'] ?? null,
                 'amount' => $amount,
+                'discount_amount' => $discount,
                 'fee' => $fee,
                 'total_payment' => $total,
                 'status' => Order::STATUS_PENDING,
@@ -90,6 +113,12 @@ class CheckoutController extends Controller
                     (int) config('pakasir.order_expiry_minutes', 60)
                 ),
             ]);
+
+            if ($voucher) {
+                Voucher::where('id', $voucher->id)->increment('used_count');
+            }
+
+            return $order;
         });
 
         Audit::log('order.created', $order, [
