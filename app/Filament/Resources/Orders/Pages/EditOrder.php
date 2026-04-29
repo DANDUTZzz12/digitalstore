@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Orders\Pages;
 
 use App\Filament\Resources\Orders\OrderResource;
+use App\Filament\Resources\Orders\Schemas\OrderForm;
 use App\Models\Order;
 use App\Models\Stock;
 use App\Services\FonnteWhatsApp;
@@ -36,7 +37,11 @@ class EditOrder extends EditRecord
                 ->label('Kirim Akun Manual')
                 ->icon('heroicon-o-paper-airplane')
                 ->color('success')
-                ->visible(fn () => $this->getRecord()->isPaid() && ! $this->getRecord()->stock_id)
+                // Tombol header LEGACY untuk order single-item lama (tanpa OrderItem).
+                // Multi-item: form per-item di OrderForm sudah meng-cover manual delivery.
+                ->visible(fn () => $this->getRecord()->isPaid()
+                    && ! $this->getRecord()->stock_id
+                    && ! $this->getRecord()->items()->exists())
                 ->modalHeading('Kirim Akun Manual ke Pembeli')
                 ->modalDescription('Kredensial akan disimpan terenkripsi di tabel stocks dan otomatis tampil di invoice publik order ini.')
                 ->modalSubmitActionLabel('Kirim & Assign ke Order')
@@ -107,6 +112,11 @@ class EditOrder extends EditRecord
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
         /** @var Order $record */
+        // Ekstrak state Repeater "items" SEBELUM parent save: kita butuh field
+        // manual_email_or_phone / manual_password / manual_additional_info untuk
+        // bikin Stock baru. Field-field tsb tidak fillable di OrderItem jadi tidak
+        // berpengaruh ke save relationship.
+        $itemsState = $data['items'] ?? [];
         $incomingStatus = $data['status'] ?? $record->status;
 
         // Transisi pertama ke PAID — jalankan fulfillment + assign stok.
@@ -122,8 +132,13 @@ class EditOrder extends EditRecord
             && $record->isPaid()
             && ! $record->stock_id;
 
+        // Default path (tanpa transisi PAID) — jalan parent dulu, lalu commit
+        // manual delivery per item kalau admin mengisi kredensial di Repeater.
         if (! $becomingPaid && ! $rescuePaidWithoutStock) {
-            return parent::handleRecordUpdate($record, $data);
+            $updated = parent::handleRecordUpdate($record, $data);
+            $this->commitItemManualDeliveries($updated, $itemsState);
+
+            return $updated;
         }
 
         // Untuk transisi ke paid: jangan biarkan parent overwrite status secara
@@ -146,19 +161,61 @@ class EditOrder extends EditRecord
         );
         $record->refresh();
 
-        if ($record->stock_id) {
+        // Setelah fulfillment, juga commit kredensial manual yang admin input
+        // di Repeater (kasus: order multi-item yang stoknya kosong, admin
+        // langsung isi kredensial di form yang sama).
+        $this->commitItemManualDeliveries($record, $itemsState);
+        $record->refresh();
+
+        $hasItems = $record->items()->exists();
+        $allDelivered = $hasItems
+            ? $record->items()->whereNull('stock_id')->doesntExist()
+            : (bool) $record->stock_id;
+
+        if ($allDelivered) {
             Notification::make()
                 ->title('Stok berhasil di-assign ke order ini.')
                 ->success()
                 ->send();
         } else {
             Notification::make()
-                ->title('Order ditandai PAID, tapi tidak ada stok tersedia untuk varian ini.')
-                ->body('Klik tombol "Kirim Akun Manual" di header untuk input akun langsung, atau tambahkan stok untuk varian terkait lalu simpan ulang order.')
+                ->title('Order ditandai PAID, tapi sebagian item belum punya akun.')
+                ->body('Isi kolom "Email/Password" pada item yang masih "Belum Dikirim" lalu klik Save lagi.')
                 ->warning()
                 ->send();
         }
 
         return $record;
+    }
+
+    /**
+     * Loop state Repeater items, untuk setiap row yang ada manual_email_or_phone +
+     * manual_password, buat Stock baru terenkripsi + assign ke OrderItem.stock_id,
+     * lalu kirim WA via Fonnte (kalau diaktifkan).
+     */
+    protected function commitItemManualDeliveries(Order $order, array $itemsState): void
+    {
+        $assigned = OrderForm::commitManualDeliveries($order, $itemsState);
+        if ($assigned <= 0) {
+            return;
+        }
+
+        Audit::log('order.manual_delivery', $order, [
+            'admin_user_id' => auth()->id(),
+            'items_assigned' => $assigned,
+        ]);
+
+        $waSent = app(FonnteWhatsApp::class)->sendCredentials(
+            $order->fresh(['items.stock', 'items.product', 'items.variant', 'product', 'variant', 'stock'])
+        );
+
+        Notification::make()
+            ->title($assigned.' akun berhasil dikirim ke pembeli.')
+            ->body($waSent
+                ? 'Kredensial sudah tampil di invoice publik dan dikirim ke WhatsApp customer via Fonnte.'
+                : 'Kredensial sudah tampil di invoice publik. (Auto-kirim WA dilewati — cek Site Settings → Fonnte kalau ingin aktifkan.)'
+            )
+            ->success()
+            ->send();
     }
 }
