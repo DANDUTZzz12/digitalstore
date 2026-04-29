@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Voucher;
@@ -112,6 +113,17 @@ class CheckoutController extends Controller
                 'expired_at' => now()->addMinutes(
                     (int) config('pakasir.order_expiry_minutes', 60)
                 ),
+            ]);
+
+            // Sinkron OrderItem (unified fulfillment path) — single-item juga
+            // punya 1 baris OrderItem agar service fulfillment konsisten antara
+            // checkout instan dan checkout cart multi-item.
+            OrderItem::create([
+                'order_id' => $order->id,
+                'product_id' => $variant->product_id,
+                'product_variant_id' => $variant->id,
+                'qty' => 1,
+                'unit_price' => $amount,
             ]);
 
             if ($voucher) {

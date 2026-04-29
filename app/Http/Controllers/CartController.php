@@ -3,22 +3,32 @@
 namespace App\Http\Controllers;
 
 use App\Models\CartItem;
+use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\ProductVariant;
+use App\Models\User;
+use App\Models\Voucher;
+use App\Services\PakasirService;
+use App\Support\Audit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 /**
  * Cart sederhana untuk user login.
  *
- * Karena gateway pembayaran (Pakasir) hanya menerima 1 order per transaksi,
- * cart di sini berfungsi sebagai "saved-for-later list". Tiap item punya
- * tombol "Bayar Sekarang" yang langsung mengarah ke checkout instan untuk
- * varian tersebut. Guest TIDAK diijinkan mengakses cart (qty = 1, beli langsung).
+ * Pembayaran satu transaksi (Pakasir) menggabungkan grand total dari semua
+ * item di keranjang menjadi 1 Order parent + N OrderItem. Saat webhook PAID
+ * masuk, OrderFulfillment iterasi tiap item & assign stok per varian.
+ * Guest TIDAK diijinkan mengakses cart (qty = 1, beli langsung).
  */
 class CartController extends Controller
 {
+    public function __construct(protected PakasirService $pakasir) {}
+
     public function index(): View
     {
         $items = CartItem::with(['product', 'variant'])
@@ -74,5 +84,146 @@ class CartController extends Controller
         $item->delete();
 
         return back()->with('success', 'Item dihapus dari keranjang.');
+    }
+
+    /**
+     * POST /keranjang/checkout — bayar SEMUA item di keranjang dalam 1 transaksi.
+     */
+    public function checkoutAll(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'customer_email' => ['required', 'email', 'max:255'],
+            'customer_phone' => ['nullable', 'string', 'max:32', 'regex:/^[0-9+\- ]+$/'],
+            'voucher_code' => ['nullable', 'string', 'max:64'],
+        ]);
+
+        /** @var User $user */
+        $user = Auth::user();
+
+        $items = CartItem::with(['variant.product'])
+            ->where('user_id', $user->id)
+            ->get();
+
+        if ($items->isEmpty()) {
+            return redirect()->route('cart.index')->with('error', 'Keranjang kosong.');
+        }
+
+        // Hitung grand total di server pakai harga efektif (flashsale-aware).
+        $subtotal = 0;
+        $lineTotals = [];
+        foreach ($items as $cart) {
+            if (! $cart->variant) {
+                return redirect()->route('cart.index')->with('error', 'Salah satu varian tidak tersedia lagi.');
+            }
+            $unit = $cart->variant->effectivePrice();
+            $qty = max(1, (int) $cart->quantity);
+            $line = $unit * $qty;
+            $subtotal += $line;
+            $lineTotals[$cart->id] = ['unit' => $unit, 'qty' => $qty, 'line' => $line];
+        }
+
+        $discount = 0;
+        $voucher = null;
+        if (! empty($data['voucher_code'])) {
+            $voucher = Voucher::active()
+                ->whereRaw('LOWER(code) = ?', [strtolower(trim($data['voucher_code']))])
+                ->first();
+            if (! $voucher) {
+                return back()->withInput()->withErrors([
+                    'voucher_code' => 'Kode voucher tidak ditemukan atau sudah kadaluarsa.',
+                ]);
+            }
+            $discount = $voucher->discountFor($subtotal);
+            if ($discount <= 0) {
+                return back()->withInput()->withErrors([
+                    'voucher_code' => 'Voucher tidak memenuhi syarat (cek minimal pembelian / sisa kuota).',
+                ]);
+            }
+        }
+
+        $fee = 0;
+        $total = max(0, $subtotal - $discount) + $fee;
+
+        $firstVariant = $items->first()->variant;
+
+        $order = DB::transaction(function () use ($items, $lineTotals, $user, $data, $subtotal, $discount, $fee, $total, $voucher, $firstVariant) {
+            $order = Order::create([
+                'order_code' => $this->generateOrderCode(),
+                'user_id' => $user->id,
+                // Order tetap simpan product_id/variant_id pertama sebagai
+                // ringkasan (kompatibel dengan Filament resource & invoice
+                // legacy yang membaca field ini).
+                'product_id' => $firstVariant->product_id,
+                'product_variant_id' => $firstVariant->id,
+                'voucher_id' => $voucher?->id,
+                'customer_email' => $data['customer_email'],
+                'customer_phone' => $data['customer_phone'] ?? null,
+                'amount' => $subtotal,
+                'discount_amount' => $discount,
+                'fee' => $fee,
+                'total_payment' => $total,
+                'status' => Order::STATUS_PENDING,
+                'expired_at' => now()->addMinutes(
+                    (int) config('pakasir.order_expiry_minutes', 60)
+                ),
+            ]);
+
+            foreach ($items as $cart) {
+                $info = $lineTotals[$cart->id];
+                OrderItem::create([
+                    'order_id' => $order->id,
+                    'product_id' => $cart->variant->product_id,
+                    'product_variant_id' => $cart->variant->id,
+                    'qty' => $info['qty'],
+                    'unit_price' => $info['unit'],
+                ]);
+            }
+
+            if ($voucher) {
+                Voucher::where('id', $voucher->id)->increment('used_count');
+            }
+
+            // Kosongkan keranjang setelah Order berhasil dibuat. Kalau pembayaran
+            // gagal user bisa add ulang dari product page.
+            CartItem::where('user_id', $user->id)->delete();
+
+            return $order;
+        });
+
+        Audit::log('order.created', $order, [
+            'source' => 'cart',
+            'items' => $items->count(),
+            'subtotal' => $subtotal,
+            'discount' => $discount,
+            'total' => $total,
+        ]);
+
+        if (! $this->pakasir->isConfigured()) {
+            return redirect()
+                ->route('invoice.show', $order->order_code)
+                ->with('warning', 'Payment gateway belum dikonfigurasi. Hubungi admin.');
+        }
+
+        $paymentUrl = $this->pakasir->buildPaymentUrl(
+            $order,
+            route('invoice.show', $order->order_code)
+        );
+
+        return redirect()->away($paymentUrl);
+    }
+
+    protected function generateOrderCode(): string
+    {
+        for ($i = 0; $i < 5; $i++) {
+            $code = 'AKH-'.now()->format('Ymd').'-'.strtoupper(Str::random(6));
+            if (! Order::where('order_code', $code)->exists()) {
+                return $code;
+            }
+        }
+        do {
+            $fallback = 'AKH-'.now()->format('Ymd').'-'.strtoupper(Str::random(10));
+        } while (Order::where('order_code', $fallback)->exists());
+
+        return $fallback;
     }
 }

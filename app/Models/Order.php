@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Order extends Model
@@ -80,6 +81,20 @@ class Order extends Model
     public function stock(): BelongsTo
     {
         return $this->belongsTo(Stock::class);
+    }
+
+    public function items(): HasMany
+    {
+        return $this->hasMany(OrderItem::class);
+    }
+
+    /**
+     * True jika order ini hasil checkout cart (multi-varian dalam 1 transaksi).
+     * Order single-item (instant checkout) cukup punya 1 OrderItem atau 0 (legacy).
+     */
+    public function isCart(): bool
+    {
+        return $this->items()->count() > 1;
     }
 
     public function isPaid(): bool

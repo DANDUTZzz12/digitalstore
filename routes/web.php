@@ -91,6 +91,8 @@ Route::middleware('auth')->prefix('akun')->name('account.')->group(function () {
 Route::middleware('auth')->prefix('keranjang')->name('cart.')->group(function () {
     Route::get('/', [CartController::class, 'index'])->name('index');
     Route::post('/add', [CartController::class, 'add'])->middleware('throttle:30,1')->name('add');
+    Route::post('/checkout', [CartController::class, 'checkoutAll'])
+        ->middleware('throttle:10,1')->name('checkout');
     Route::patch('/{item}', [CartController::class, 'update'])->name('update');
     Route::delete('/{item}', [CartController::class, 'destroy'])->name('destroy');
 });
