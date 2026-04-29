@@ -109,14 +109,24 @@ class EditOrder extends EditRecord
      * tertulis. Juga menjalankan rescue assignment saat order sudah paid tapi
      * stock_id-nya masih null (kasus: status sudah di-update di rilis sebelumnya).
      */
+    /**
+     * Reset counter manual delivery sebelum save dimulai. Hook Repeater
+     * (assignManualDeliveryToItem) akan increment-counter saat per-item
+     * di-assign. Kemudian afterSave() baca counter untuk kirim WA.
+     */
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        OrderForm::$manualDeliveriesAssignedThisRequest = 0;
+
+        return $data;
+    }
+
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
         /** @var Order $record */
-        // Ekstrak state Repeater "items" SEBELUM parent save: kita butuh field
-        // manual_email_or_phone / manual_password / manual_additional_info untuk
-        // bikin Stock baru. Field-field tsb tidak fillable di OrderItem jadi tidak
-        // berpengaruh ke save relationship.
-        $itemsState = $data['items'] ?? [];
+        // Catatan: $data['items'] akan KOSONG karena Repeater::relationship()
+        // men-set dehydrated(false). Path manual delivery sekarang melalui
+        // hook OrderForm::assignManualDeliveryToItem (per-item).
         $incomingStatus = $data['status'] ?? $record->status;
 
         // Transisi pertama ke PAID — jalankan fulfillment + assign stok.
@@ -132,13 +142,12 @@ class EditOrder extends EditRecord
             && $record->isPaid()
             && ! $record->stock_id;
 
-        // Default path (tanpa transisi PAID) — jalan parent dulu, lalu commit
-        // manual delivery per item kalau admin mengisi kredensial di Repeater.
+        // Default path (tanpa transisi PAID) — Filament parent yang akan
+        // memanggil saveRelationships → mutateRelationshipDataBeforeSaveUsing
+        // hook untuk tiap item Repeater, di sana per-item manual delivery
+        // di-process. WA dispatch + audit di afterSave().
         if (! $becomingPaid && ! $rescuePaidWithoutStock) {
-            $updated = parent::handleRecordUpdate($record, $data);
-            $this->commitItemManualDeliveries($updated, $itemsState);
-
-            return $updated;
+            return parent::handleRecordUpdate($record, $data);
         }
 
         // Untuk transisi ke paid: jangan biarkan parent overwrite status secara
@@ -161,11 +170,10 @@ class EditOrder extends EditRecord
         );
         $record->refresh();
 
-        // Setelah fulfillment, juga commit kredensial manual yang admin input
-        // di Repeater (kasus: order multi-item yang stoknya kosong, admin
-        // langsung isi kredensial di form yang sama).
-        $this->commitItemManualDeliveries($record, $itemsState);
-        $record->refresh();
+        // Setelah fulfillment, Filament saveRelationships akan trigger
+        // mutateRelationshipDataBeforeSaveUsing hook utk tiap item Repeater
+        // → per-item manual delivery di-process di sana. WA dispatch di
+        // afterSave().
 
         $hasItems = $record->items()->exists();
         $allDelivered = $hasItems
@@ -189,31 +197,35 @@ class EditOrder extends EditRecord
     }
 
     /**
-     * Loop state Repeater items, untuk setiap row yang ada manual_email_or_phone +
-     * manual_password, buat Stock baru terenkripsi + assign ke OrderItem.stock_id,
-     * lalu kirim WA via Fonnte (kalau diaktifkan).
+     * afterSave: kalau hook Repeater berhasil assign manual delivery untuk
+     * 1+ item, audit log + dispatch WA Fonnte dengan kredensial baru.
      */
-    protected function commitItemManualDeliveries(Order $order, array $itemsState): void
+    protected function afterSave(): void
     {
-        $assigned = OrderForm::commitManualDeliveries($order, $itemsState);
+        $assigned = OrderForm::$manualDeliveriesAssignedThisRequest;
         if ($assigned <= 0) {
             return;
         }
+        OrderForm::$manualDeliveriesAssignedThisRequest = 0;
+
+        /** @var Order $order */
+        $order = $this->getRecord()->fresh([
+            'items.stock', 'items.product', 'items.variant',
+            'product', 'variant', 'stock',
+        ]);
 
         Audit::log('order.manual_delivery', $order, [
             'admin_user_id' => auth()->id(),
             'items_assigned' => $assigned,
         ]);
 
-        $waSent = app(FonnteWhatsApp::class)->sendCredentials(
-            $order->fresh(['items.stock', 'items.product', 'items.variant', 'product', 'variant', 'stock'])
-        );
+        $waSent = app(FonnteWhatsApp::class)->sendCredentials($order);
 
         Notification::make()
             ->title($assigned.' akun berhasil dikirim ke pembeli.')
             ->body($waSent
-                ? 'Kredensial sudah tampil di invoice publik dan dikirim ke WhatsApp customer via Fonnte.'
-                : 'Kredensial sudah tampil di invoice publik. (Auto-kirim WA dilewati — cek Site Settings → Fonnte kalau ingin aktifkan.)'
+                ? 'Kredensial tersimpan ter-encrypted, tampil di invoice publik, dan dikirim ke WhatsApp customer via Fonnte.'
+                : 'Kredensial tersimpan ter-encrypted dan tampil di invoice publik. (Auto-kirim WA dilewati — aktifkan di Site Settings → Fonnte kalau ingin.)'
             )
             ->success()
             ->send();

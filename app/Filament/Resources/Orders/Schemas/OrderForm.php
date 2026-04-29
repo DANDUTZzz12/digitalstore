@@ -64,6 +64,28 @@ class OrderForm
                             ->deletable(false)
                             ->reorderable(false)
                             ->columnSpanFull()
+                            // Hook PER-ITEM saat Filament saveRelationships() — di sini
+                            // kita intercept manual_* dari $itemData (yang TIDAK ada di
+                            // $data parent) untuk bikin Stock + assign ke OrderItem.
+                            // Ini path resmi karena Repeater::relationship() men-set
+                            // dehydrated(false) di komponen → state items TIDAK masuk
+                            // $data form parent.
+                            ->mutateRelationshipDataBeforeSaveUsing(function (array $data, $record) {
+                                self::assignManualDeliveryToItem($data, $record);
+
+                                // Strip kolom non-fillable agar fill+save Filament bersih.
+                                unset(
+                                    $data['manual_email_or_phone'],
+                                    $data['manual_password'],
+                                    $data['manual_additional_info'],
+                                    $data['stock_email_view'],
+                                    $data['stock_password_view'],
+                                    $data['stock_info_view'],
+                                    $data['item_label'],
+                                );
+
+                                return $data;
+                            })
                             ->schema([
                                 Placeholder::make('item_label')
                                     ->label('Produk / Varian')
@@ -193,11 +215,55 @@ class OrderForm
     }
 
     /**
-     * Helper: dipanggil dari EditOrder::handleRecordUpdate setelah Order tersimpan.
-     * Untuk setiap item.id yang punya manual_email_or_phone + manual_password,
-     * buat Stock baru, assign ke item.stock_id, mark sold.
-     *
-     * @return int Jumlah item yang berhasil di-assign.
+     * Counter shared antara hook Repeater (per-item) dan EditOrder::afterSave —
+     * untuk tahu apakah perlu kirim WA dengan kredensial baru.
+     */
+    public static int $manualDeliveriesAssignedThisRequest = 0;
+
+    /**
+     * Hook PER-ITEM dari Repeater::mutateRelationshipDataBeforeSaveUsing.
+     * Terima $data row + $record OrderItem. Kalau admin isi manual_email/password
+     * dan item belum punya stock_id, bikin Stock + assign sekarang juga (sebelum
+     * Filament fill+save). Counter increment supaya afterSave tahu kirim WA.
+     */
+    public static function assignManualDeliveryToItem(array $data, $record): void
+    {
+        if (! $record || ! is_object($record)) {
+            return;
+        }
+        if ($record->stock_id) {
+            return;
+        }
+
+        $email = trim((string) ($data['manual_email_or_phone'] ?? ''));
+        $password = trim((string) ($data['manual_password'] ?? ''));
+        if ($email === '' || $password === '') {
+            return;
+        }
+
+        DB::transaction(function () use ($record, $data, $email, $password) {
+            $stock = Stock::create([
+                'product_variant_id' => $record->product_variant_id,
+                'email_or_phone' => $email,
+                'password' => $password,
+                'additional_info' => $data['manual_additional_info'] ?? null,
+                'is_sold' => true,
+                'sold_at' => now(),
+            ]);
+
+            $record->stock_id = $stock->id;
+            $record->fulfilled_at = now();
+            $record->save();
+        });
+
+        self::$manualDeliveriesAssignedThisRequest++;
+    }
+
+    /**
+     * Helper LEGACY: dipanggil saat refactor lama parsing $data['items'].
+     * Filament Repeater::relationship() men-set dehydrated(false) sehingga
+     * 'items' TIDAK masuk ke $data — method ini effectively no-op untuk
+     * multi-item baru. Path resmi: assignManualDeliveryToItem (per-item).
      */
     public static function commitManualDeliveries(Order $order, array $itemsState): int
     {
