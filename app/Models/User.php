@@ -28,6 +28,8 @@ class User extends Authenticatable implements FilamentUser
         'banned_at',
         'ban_reason',
         'last_login_at',
+        'telegram_chat_id',
+        'telegram_username',
     ];
 
     protected $hidden = [
@@ -84,6 +86,11 @@ class User extends Authenticatable implements FilamentUser
     public function reviews(): HasMany
     {
         return $this->hasMany(Review::class);
+    }
+
+    public function telegramLinkTokens(): HasMany
+    {
+        return $this->hasMany(TelegramLinkToken::class);
     }
 
     /**
