@@ -285,11 +285,11 @@ class TelegramBotService
     public function showProductList(string $chatId, int $page = 1, ?int $messageId = null): void
     {
         $perPage = 10;
-        $totalProducts = Product::where('is_active', true)->count();
+        $totalProducts = Product::count();
         $totalPages = max(1, (int) ceil($totalProducts / $perPage));
         $page = max(1, min($page, $totalPages));
 
-        $products = Product::where('is_active', true)
+        $products = Product::query()
             ->orderBy('name')
             ->skip(($page - 1) * $perPage)
             ->take($perPage)
@@ -358,8 +358,8 @@ class TelegramBotService
             $q->withCount(['stocks as available_count' => fn ($qq) => $qq->where('is_sold', false)]);
         }])->find($productId);
 
-        if (! $product || ! $product->is_active) {
-            $this->sendMessage($chatId, '⚠ Produk tidak ditemukan / nonaktif.');
+        if (! $product) {
+            $this->sendMessage($chatId, '⚠ Produk tidak ditemukan.');
 
             return;
         }
@@ -368,8 +368,8 @@ class TelegramBotService
         if ($product->description) {
             $caption .= htmlspecialchars(Str::limit(strip_tags($product->description), 400)) . "\n\n";
         }
-        if ($product->terms_conditions) {
-            $caption .= "<b>S&K:</b>\n" . htmlspecialchars(Str::limit(strip_tags($product->terms_conditions), 300)) . "\n\n";
+        if ($product->terms_html) {
+            $caption .= "<b>S&K:</b>\n" . htmlspecialchars(Str::limit(strip_tags($product->terms_html), 300)) . "\n\n";
         }
         $caption .= "<b>Pilih varian:</b>";
 
@@ -391,9 +391,10 @@ class TelegramBotService
 
         $extra = ['reply_markup' => json_encode(['inline_keyboard' => $rows])];
 
-        // Coba kirim photo kalau ada, fallback ke text
-        if ($product->image_path && file_exists(public_path('storage/' . $product->image_path))) {
-            $url = url('storage/' . $product->image_path);
+        // Coba kirim photo kalau ada, fallback ke text. Kolom di DB: 'image'.
+        $img = $product->image;
+        if ($img && file_exists(public_path('storage/' . $img))) {
+            $url = url('storage/' . $img);
             $this->sendPhoto($chatId, $url, $caption, $extra);
         } else {
             $this->sendMessage($chatId, $caption, $extra);
