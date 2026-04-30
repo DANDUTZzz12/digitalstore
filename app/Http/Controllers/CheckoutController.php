@@ -52,6 +52,14 @@ class CheckoutController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        // Tolak user banned (defensif — login juga sudah block, tapi kalau sesi
+        // masih hidup saat di-ban, harus tetap di-block di sini).
+        if (auth()->check() && auth()->user()->is_banned) {
+            auth()->logout();
+
+            return redirect()->route('login')->with('error', 'Akun Anda di-banned. Tidak bisa checkout.');
+        }
+
         $data = $request->validate([
             'product_id' => ['required', 'integer', 'exists:products,id'],
             'product_variant_id' => ['required', 'integer', 'exists:product_variants,id'],

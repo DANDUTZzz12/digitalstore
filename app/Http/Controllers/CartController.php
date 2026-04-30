@@ -154,6 +154,13 @@ class CartController extends Controller
      */
     public function checkoutAll(Request $request): RedirectResponse
     {
+        // Tolak user banned.
+        if (Auth::check() && Auth::user()->is_banned) {
+            Auth::logout();
+
+            return redirect()->route('login')->with('error', 'Akun Anda di-banned. Tidak bisa checkout.');
+        }
+
         $data = $request->validate([
             'customer_email' => ['required', 'email', 'max:255'],
             'customer_phone' => ['nullable', 'string', 'max:32', 'regex:/^[0-9+\- ]+$/'],
