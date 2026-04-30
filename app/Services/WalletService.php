@@ -97,9 +97,15 @@ class WalletService
      */
     public static function refundFromOrder(Order $order, ?string $note = null): WalletTransaction
     {
+        // Refund SETARA dengan yang user benar-benar bayar (total_payment),
+        // bukan amount (subtotal pre-discount). Kalau pakai voucher, amount
+        // > total_payment, jadi kalau pakai amount user dapat saldo lebih.
+        // Fallback ke amount untuk order legacy yang total_payment-nya null.
+        $refundAmount = (int) ($order->total_payment ?? $order->amount);
+
         return self::credit(
             user: $order->user,
-            amount: (int) $order->amount,
+            amount: $refundAmount,
             type: WalletTransaction::TYPE_REFUND,
             note: $note ?? "Refund order {$order->order_code}",
             orderId: $order->id,

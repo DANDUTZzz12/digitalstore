@@ -60,11 +60,11 @@ class EditQuickProduct extends EditRecord
         $variantsData = $data['variants'] ?? [];
         unset($data['variants']);
 
-        // products.price NOT NULL — sync ke varian termurah.
+        // products.price NOT NULL — sync ke varian termurah. Konsisten dengan
+        // CreateQuickProduct: kalau semua harga = 0, simpan 0 (bukan biarkan
+        // value lama).
         $prices = array_filter(array_map(fn ($v) => (int) ($v['price'] ?? 0), $variantsData));
-        if ($prices) {
-            $data['price'] = min($prices);
-        }
+        $data['price'] = $prices ? min($prices) : 0;
 
         return DB::transaction(function () use ($record, $data, $variantsData) {
             /** @var Product $record */

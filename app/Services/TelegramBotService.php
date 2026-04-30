@@ -550,10 +550,8 @@ class TelegramBotService
                     }
                 }
 
-                $orderCode = 'AKH-' . now()->format('Ymd') . '-' . strtoupper(Str::random(6));
-
                 $order = Order::create([
-                    'order_code' => $orderCode,
+                    'order_code' => Order::generateOrderCode(),
                     'user_id' => $user->id,
                     'product_id' => $expandedItems[0]['product_id'],
                     'product_variant_id' => $expandedItems[0]['product_variant_id'],
@@ -562,6 +560,11 @@ class TelegramBotService
                     'status' => 'pending',
                     'customer_email' => $user->email,
                     'customer_phone' => $user->phone,
+                    // Bot order tetap punya TTL agar dipungut oleh job auto-expire,
+                    // konsisten dengan checkout web/cart.
+                    'expired_at' => now()->addMinutes(
+                        (int) config('pakasir.order_expiry_minutes', 60)
+                    ),
                 ]);
 
                 foreach ($expandedItems as $item) {
