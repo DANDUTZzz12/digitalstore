@@ -102,7 +102,7 @@ class QuickProductForm
                                     ->numeric()
                                     ->prefix('Rp')
                                     ->required()
-                                    ->columnSpan(['default' => 12, 'md' => 3]),
+                                    ->columnSpan(['default' => 12, 'md' => 4]),
 
                                 Select::make('is_auto_send')
                                     ->label('Mode Kirim')
@@ -113,14 +113,14 @@ class QuickProductForm
                                     ])
                                     ->placeholder('Default (ikut produk)')
                                     ->dehydrateStateUsing(fn ($state) => ($state === '' || $state === null) ? null : (bool) $state)
-                                    ->columnSpan(['default' => 12, 'md' => 5]),
+                                    ->columnSpan(['default' => 12, 'md' => 4]),
 
                                 TextInput::make('warranty_days')
                                     ->label('Garansi (hari)')
                                     ->numeric()
                                     ->minValue(0)
                                     ->maxValue(3650)
-                                    ->columnSpan(['default' => 6, 'md' => 4]),
+                                    ->columnSpan(['default' => 6, 'md' => 3]),
 
                                 Select::make('share_type')
                                     ->label('Tipe Akun')
@@ -130,32 +130,59 @@ class QuickProductForm
                                         'sharing_antilimit' => 'Sharing Antilimit',
                                     ])
                                     ->placeholder('— Tidak Ada —')
-                                    ->columnSpan(['default' => 6, 'md' => 4]),
+                                    ->columnSpan(['default' => 6, 'md' => 3]),
 
                                 Toggle::make('_replace_stock')
-                                    ->label('Mode Edit Stok (ganti semua)')
-                                    ->helperText('Aktifkan untuk hapus stok BELUM TERJUAL lalu replace dengan isi textarea di bawah.')
+                                    ->label('Mode Edit Stok')
+                                    ->helperText('Aktif: textarea isi stok yang ada — bisa edit/hapus per baris. Save = sync semua. Stok TERJUAL tetap aman.')
                                     ->default(false)
-                                    ->columnSpan(['default' => 12, 'md' => 4]),
+                                    ->live()
+                                    ->afterStateUpdated(function ($state, callable $get, callable $set) {
+                                        if ($state) {
+                                            // Aktifkan: load semua stok BELUM TERJUAL ke textarea
+                                            $variantId = $get('id');
+                                            if (! $variantId) {
+                                                return;
+                                            }
+                                            $variant = \App\Models\ProductVariant::find($variantId);
+                                            if (! $variant) {
+                                                return;
+                                            }
+                                            $lines = $variant->stocks()
+                                                ->where('is_sold', false)
+                                                ->get()
+                                                ->map(function ($s) {
+                                                    $base = $s->email_or_phone.'|'.$s->password;
+                                                    return $s->additional_info ? $base.'|'.$s->additional_info : $base;
+                                                })->implode("\n");
+                                            $set('_bulk_stock', $lines);
+                                        } else {
+                                            // Matikan: kosongkan textarea (kembali ke append mode)
+                                            $set('_bulk_stock', '');
+                                        }
+                                    })
+                                    ->columnSpan(['default' => 12, 'md' => 6]),
 
                                 Textarea::make('_bulk_stock')
-                                    ->label('Bulk Stok Akun (paste di sini)')
+                                    ->label(fn (callable $get) => $get('_replace_stock')
+                                        ? 'Edit Semua Stok (Mode Edit ON)'
+                                        : 'Tambah Stok Akun')
                                     ->placeholder("Format per baris:\nemail@example.com|password123\nemail2@example.com|password456|info opsional")
                                     ->helperText(function (callable $get) {
+                                        $isEdit = (bool) $get('_replace_stock');
                                         $variantId = $get('id');
-                                        if (! $variantId) {
-                                            return 'Setelah simpan, baris di bawah akan jadi stok akun baru untuk varian ini.';
-                                        }
-                                        $variant = \App\Models\ProductVariant::find($variantId);
-                                        if (! $variant) {
-                                            return 'Tambah baris baru untuk menambah stok akun.';
-                                        }
-                                        $available = $variant->stocks()->where('is_sold', false)->count();
-                                        $sold = $variant->stocks()->where('is_sold', true)->count();
+                                        $variant = $variantId ? \App\Models\ProductVariant::find($variantId) : null;
+                                        $available = $variant ? $variant->stocks()->where('is_sold', false)->count() : 0;
+                                        $sold = $variant ? $variant->stocks()->where('is_sold', true)->count() : 0;
+                                        $stats = $variant ? " (saat ini: {$available} tersedia, {$sold} terkirim)" : '';
 
-                                        return "Stok saat ini: {$available} tersedia, {$sold} sudah terkirim. Isi untuk menambah stok baru (atau aktifkan Mode Edit untuk replace).";
+                                        if ($isEdit) {
+                                            return 'EDIT MODE'.$stats.'. Edit/hapus baris untuk update stok. Hapus baris = stok itu dihapus. Tambah baris = stok baru. Save sync semua.';
+                                        }
+
+                                        return 'TAMBAH MODE'.$stats.'. Baris di textarea ini akan DITAMBAH ke stok yang sudah ada. Aktifkan Mode Edit untuk lihat & ubah stok existing.';
                                     })
-                                    ->rows(4)
+                                    ->rows(6)
                                     ->columnSpan(12),
                             ])
                             ->columns(12)
